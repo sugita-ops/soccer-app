@@ -1,0 +1,452 @@
+import React, { useEffect, useMemo, useState } from "react";
+
+const FORMATIONS = {
+  "4-4-2": [
+    "GK","LB","LCB","RCB","RB",
+    "LM","LCM","RCM","RM",
+    "ST1","ST2",
+  ],
+  "4-3-3": [
+    "GK","LB","LCB","RCB","RB",
+    "CDM","LCM","RCM",
+    "LW","ST","RW",
+  ],
+  "3-5-2": [
+    "GK","LCB","CB","RCB",
+    "LWB","LCM","CDM","RCM","RWB",
+    "ST1","ST2",
+  ],
+  "4-2-3-1": [
+    "GK","LB","LCB","RCB","RB",
+    "CDM1","CDM2",
+    "LAM","CAM","RAM",
+    "ST",
+  ],
+  "3-4-3": [
+    "GK","LCB","CB","RCB",
+    "LM","LCM","RCM","RM",
+    "LW","ST","RW",
+  ]
+};
+
+const emptyMatch = (formation = "4-4-2") => ({
+  id: crypto.randomUUID(),
+  date: new Date().toISOString().slice(0,16),  // yyyy-mm-ddThh:mm
+  type: "練習試合",
+  opponent: "",
+  venue: "",
+  goalsFor: "",
+  goalsAgainst: "",
+  mvp: "",
+  notes: "",
+  formation: formation,
+  lineup: FORMATIONS[formation].reduce((acc,k)=> (acc[k]="", acc), {}),
+});
+
+const useLocal = (key, initial) => {
+  const [v, setV] = useState(() => {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : initial; }
+    catch { return initial; }
+  });
+  useEffect(()=> localStorage.setItem(key, JSON.stringify(v)), [key, v]);
+  return [v, setV];
+};
+
+export default function App() {
+  // ログイン管理
+  const [user, setUser] = useLocal("currentUser", null);
+  const [loginId, setLoginId] = useState("");
+  const [loginPw, setLoginPw] = useState("");
+
+  // 簡易認証（実際のアプリでは安全な方法を使用）
+  const validUsers = {
+    "admin": "miyachu2024",
+    "coach": "soccer123",
+    "parent": "supporter"
+  };
+
+  const login = () => {
+    if (validUsers[loginId] === loginPw) {
+      setUser({ id: loginId, name: loginId });
+      setLoginId(""); setLoginPw("");
+    } else {
+      alert("IDまたはパスワードが間違っています");
+    }
+  };
+
+  const logout = () => setUser(null);
+
+  // コメント管理
+  const [comments, setComments] = useLocal("comments", []);
+  const [newComment, setNewComment] = useState("");
+
+  const addComment = () => {
+    if (!newComment.trim()) return;
+    const comment = {
+      id: crypto.randomUUID(),
+      text: newComment.trim(),
+      author: user.name,
+      timestamp: new Date().toLocaleString("ja-JP")
+    };
+    setComments(prev => [comment, ...prev]);
+    setNewComment("");
+  };
+
+  // 選手管理
+  const [players, setPlayers] = useLocal("players", []);
+  const [name, setName] = useState("");
+  const [num, setNum] = useState("");
+
+  const addPlayer = () => {
+    if(!name.trim()) return;
+    setPlayers(p => [...p, { id: crypto.randomUUID(), name: name.trim(), num: num.trim() }]);
+    setName(""); setNum("");
+  };
+  const playerOptions = useMemo(
+    () => players
+      .slice()
+      .sort((a,b)=>(a.num||"").localeCompare(b.num||"", "ja", { numeric:true }))
+      .map(p => ({ value: p.id, label: p.num ? `#${p.num} ${p.name}` : p.name })),
+    [players]
+  );
+
+  // 試合情報
+  const [match, setMatch] = useState(()=> emptyMatch());
+  const [matches, setMatches] = useLocal("matches", []);
+  const setField = (k, v) => setMatch(m => ({ ...m, [k]: v }));
+
+  const changeFormation = (newFormation) => {
+    const newLineup = FORMATIONS[newFormation].reduce((acc, pos) => {
+      // 既存の選手がいる場合は保持、なければ空文字
+      acc[pos] = match.lineup[pos] || "";
+      return acc;
+    }, {});
+    setMatch(m => ({ ...m, formation: newFormation, lineup: newLineup }));
+  };
+
+  const saveMatch = () => {
+    // 簡易バリデーション
+    const noGK = !match.lineup.GK;
+    if (noGK) { alert("GK が未選択です"); return; }
+    setMatches(m => [ { ...match }, ...m ]);
+    setMatch(emptyMatch(match.formation));
+  };
+
+  // ログインしていない場合のUI
+  if (!user) {
+    return (
+      <div className="login-container">
+        <div className="login-card fade-in">
+          <div className="login-logo">⚽</div>
+          <h1 style={{color: 'var(--ink)', marginBottom: '8px'}}>宮中サッカー部</h1>
+          <p style={{color: 'var(--ink-2)', marginBottom: '32px'}}>管理システムにログイン</p>
+
+          <div className="stack">
+            <div>
+              <label>ユーザーID</label>
+              <input
+                value={loginId}
+                onChange={e=>setLoginId(e.target.value)}
+                placeholder="ID を入力"
+              />
+            </div>
+            <div>
+              <label>パスワード</label>
+              <input
+                type="password"
+                value={loginPw}
+                onChange={e=>setLoginPw(e.target.value)}
+                placeholder="パスワードを入力"
+                onKeyPress={e => e.key === 'Enter' && login()}
+              />
+            </div>
+            <button className="primary" onClick={login} style={{width: '100%', marginTop: '8px'}}>
+              ログイン
+            </button>
+          </div>
+
+          <div style={{marginTop: "24px", padding: "16px", background: "#f8f9fa", borderRadius: "12px"}}>
+            <div className="kicker" style={{marginBottom: '8px', fontWeight: 'bold'}}>利用可能なアカウント:</div>
+            <div style={{fontSize: "12px", lineHeight: '1.5'}}>
+              <div>🔧 <strong>admin</strong> / miyachu2024（管理者）</div>
+              <div>👨‍🏫 <strong>coach</strong> / soccer123（コーチ）</div>
+              <div>👨‍👩‍👧‍👦 <strong>parent</strong> / supporter（保護者）</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container fade-in">
+      {/* ヒーローセクション */}
+      <section className="relative overflow-hidden min-h-[300px] md:min-h-[380px] rounded-2xl shadow-lg">
+        <img
+          src="/img/miyachu-header.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          fetchpriority="high"
+        />
+        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="relative z-10 px-6 py-8 md:px-10 md:py-12 text-white text-center flex flex-col justify-center h-full">
+          <h1 style={{fontSize: '32px', margin: '0 0 12px', textShadow: '0 2px 4px rgba(0,0,0,0.3)'}}>⚽ 行け！宮中サッカー部</h1>
+          <p style={{fontSize: '16px', opacity: '0.9', margin: '0 0 16px'}}>チーム管理システム</p>
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap'}}>
+            <span>ようこそ、{user.name}さん</span>
+            <button className="ghost" onClick={logout} style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white'}}>
+              ログアウト
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="dashboard-grid">
+        {/* メインコンテンツエリア */}
+        <div className="stack">
+          {/* 選手登録・管理 */}
+          <section className="card-enhanced">
+          <h2>選手登録・管理</h2>
+          <div className="row">
+            <div>
+              <label>選手名</label>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="例）佐藤 太郎" />
+            </div>
+            <div>
+              <label>背番号</label>
+              <input value={num} onChange={e=>setNum(e.target.value)} placeholder="10" />
+            </div>
+          </div>
+          <div className="actions" style={{marginTop:8}}>
+            <button className="primary" onClick={addPlayer}>追加</button>
+            <button className="ghost" onClick={()=>{
+              const data = JSON.stringify(players, null, 2);
+              const blob = new Blob([data], {type:"application/json"});
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url; a.download = "players.json"; a.click();
+              URL.revokeObjectURL(url);
+            }}>選手データ書き出し</button>
+            <span className="kicker">登録人数：{players.length}人</span>
+          </div>
+
+          {players.length > 0 && (
+            <div style={{marginTop:12}}>
+              <div className="list">
+                {playerOptions.map(p => (
+                  <div key={p.value} style={{padding:"8px 12px", background:"#f8f9fa", borderRadius:"8px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                    <span>{p.label}</span>
+                    <button
+                      className="ghost"
+                      style={{padding:"4px 8px", fontSize:"12px"}}
+                      onClick={()=> setPlayers(prev => prev.filter(pl => pl.id !== p.value))}
+                    >
+                      削除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+          {/* 試合記録 */}
+          <section className="card-enhanced">
+          <h2>試合記録</h2>
+
+          <div className="row-3">
+            <div>
+              <label>日時</label>
+              <input type="datetime-local" value={match.date} onChange={e=>setField("date", e.target.value)} />
+            </div>
+            <div>
+              <label>種別</label>
+              <select value={match.type} onChange={e=>setField("type", e.target.value)}>
+                <option>練習試合</option>
+                <option>公式戦</option>
+                <option>招待/カップ戦</option>
+              </select>
+            </div>
+            <div>
+              <label>対戦相手</label>
+              <input value={match.opponent} onChange={e=>setField("opponent", e.target.value)} placeholder="相手チーム" />
+            </div>
+          </div>
+
+          <div className="row-3" style={{marginTop:8}}>
+            <div>
+              <label>会場</label>
+              <input value={match.venue} onChange={e=>setField("venue", e.target.value)} placeholder="○○グラウンド" />
+            </div>
+            <div>
+              <label>得点</label>
+              <input value={match.goalsFor} onChange={e=>setField("goalsFor", e.target.value)} placeholder="2" />
+            </div>
+            <div>
+              <label>失点</label>
+              <input value={match.goalsAgainst} onChange={e=>setField("goalsAgainst", e.target.value)} placeholder="1" />
+            </div>
+          </div>
+
+          <div className="row-3" style={{marginTop:8}}>
+            <div>
+              <label>MVP</label>
+              <input value={match.mvp} onChange={e=>setField("mvp", e.target.value)} placeholder="選手名 or 背番号" />
+            </div>
+            <div style={{gridColumn:"span 2"}}>
+              <label>試合メモ</label>
+              <textarea value={match.notes} onChange={e=>setField("notes", e.target.value)} placeholder="良かった点・課題など" />
+            </div>
+          </div>
+
+          <div className="stack" style={{marginTop:12}}>
+            <div className="card" style={{padding:12}}>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
+                <strong>スターティングメンバー（{match.formation || "4-4-2"}）</strong>
+                <span className="kicker">{playerOptions.length}人から選択</span>
+              </div>
+
+              <div style={{marginBottom:12}}>
+                <label>フォーメーション</label>
+                <select
+                  value={match.formation || "4-4-2"}
+                  onChange={e => changeFormation(e.target.value)}
+                  style={{maxWidth:"200px"}}
+                >
+                  {Object.keys(FORMATIONS).map(formation => (
+                    <option key={formation} value={formation}>{formation}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="lineup" style={{marginTop:8}}>
+                {FORMATIONS[match.formation || "4-4-2"].map(pos => (
+                  <div key={pos}>
+                    <label>{pos}</label>
+                    <select
+                      value={match.lineup[pos] || ""}
+                      onChange={(e)=>{
+                        const val = e.target.value;
+                        setMatch(m => ({...m, lineup: {...m.lineup, [pos]: val }}));
+                      }}
+                    >
+                      <option value="">未選択</option>
+                      {playerOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="actions">
+              <button className="primary" onClick={saveMatch}>試合を保存</button>
+              <button className="ghost" onClick={()=>{
+                const data = JSON.stringify(matches, null, 2);
+                const blob = new Blob([data], {type:"application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = "matches.json"; a.click();
+                URL.revokeObjectURL(url);
+              }}>JSON書き出し</button>
+              <button className="ghost" onClick={()=> window.print()}>印刷</button>
+            </div>
+          </div>
+        </section>
+
+          {/* 試合履歴 */}
+          <section className="card-enhanced">
+          <h2>試合履歴</h2>
+          {matches.length === 0 ? (
+            <div className="kicker">保存された試合はまだありません。</div>
+          ) : (
+            <div className="list">
+              {matches.map(m => (
+                <article key={m.id} className="match">
+                  <div style={{display:"flex", gap:8, alignItems:"center", flexWrap:"wrap"}}>
+                    <span className="badge">{m.type}</span>
+                    <strong>{(m.date||"").replace("T"," ")} / vs {m.opponent||"-"} @ {m.venue||"-"}</strong>
+                    <span>｜{m.goalsFor||0} - {m.goalsAgainst||0}</span>
+                    <span>｜{m.formation || "4-4-2"}</span>
+                    {m.mvp && <span>｜MVP: {m.mvp}</span>}
+                  </div>
+                  {m.notes && <div style={{marginTop:6}} className="kicker">{m.notes}</div>}
+                  <footer>
+                    先発:{" "}
+                    {(FORMATIONS[m.formation || "4-4-2"] || FORMATIONS["4-4-2"]).map(k=>{
+                      const pid = m.lineup?.[k];
+                      const player = players.find(p=>p.id===pid);
+                      return <span key={k}>{k}:{player? (player.num?`#${player.num} ${player.name}`:player.name):"-"}　</span>;
+                    })}
+                  </footer>
+                </article>
+              ))}
+            </div>
+          )}
+          </section>
+        </div>
+
+        {/* 応援コメント - サイドバー */}
+        <div className="comments-sidebar">
+          <h2>🎉 応援コメント</h2>
+
+          <div className="stack">
+            <div>
+              <div style={{display: "flex", gap: "8px", alignItems: "flex-end"}}>
+                <div style={{flex: 1}}>
+                  <label>応援メッセージ</label>
+                  <textarea
+                    value={newComment}
+                    onChange={e=>setNewComment(e.target.value)}
+                    placeholder="頑張れ！宮中サッカー部！"
+                    style={{minHeight: "60px"}}
+                  />
+                </div>
+                <button className="primary" onClick={addComment}>投稿</button>
+              </div>
+            </div>
+
+            {comments.length === 0 ? (
+              <div className="kicker">まだコメントがありません。最初の応援メッセージを投稿しましょう！</div>
+            ) : (
+              <div className="list">
+                {comments.map(comment => (
+                  <div key={comment.id} style={{
+                    padding: "12px",
+                    background: "#f8fffe",
+                    border: "1px solid #e6f7f5",
+                    borderRadius: "8px"
+                  }}>
+                    <div style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: "6px"
+                    }}>
+                      <strong style={{color: "#16a34a"}}>{comment.author}</strong>
+                      <span className="kicker">{comment.timestamp}</span>
+                    </div>
+                    <div>{comment.text}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="actions">
+              <button className="ghost" onClick={()=>{
+                const data = JSON.stringify(comments, null, 2);
+                const blob = new Blob([data], {type:"application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = "comments.json"; a.click();
+                URL.revokeObjectURL(url);
+              }}>コメント書き出し</button>
+              <span className="kicker">コメント数：{comments.length}件</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
