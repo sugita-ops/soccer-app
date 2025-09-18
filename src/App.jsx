@@ -59,19 +59,67 @@ export default function App() {
   const [loginId, setLoginId] = useState("");
   const [loginPw, setLoginPw] = useState("");
 
-  // 簡易認証（実際のアプリでは安全な方法を使用）
-  const validUsers = {
-    "admin": "miyachu2024",
-    "coach": "soccer123",
-    "parent": "supporter"
+  // ユーザー管理
+  const [users, setUsers] = useLocal("systemUsers", [
+    { id: "admin", password: "miyachu2024", role: "admin", name: "管理者", createdAt: "2024-01-01" },
+    { id: "coach", password: "soccer123", role: "coach", name: "コーチ", createdAt: "2024-01-01" },
+    { id: "parent", password: "supporter", role: "parent", name: "保護者", createdAt: "2024-01-01" }
+  ]);
+
+  // パスワード生成関数
+  const generatePassword = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
   };
 
   const login = () => {
-    if (validUsers[loginId] === loginPw) {
-      setUser({ id: loginId, name: loginId });
+    const foundUser = users.find(u => u.id === loginId && u.password === loginPw);
+    if (foundUser) {
+      setUser({ id: foundUser.id, name: foundUser.name, role: foundUser.role });
       setLoginId(""); setLoginPw("");
     } else {
       alert("IDまたはパスワードが間違っています");
+    }
+  };
+
+  // ユーザー管理機能
+  const [newUser, setNewUser] = useState({ id: "", name: "", role: "parent" });
+
+  const addUser = () => {
+    if (!newUser.id.trim() || !newUser.name.trim()) {
+      alert("IDと名前を入力してください");
+      return;
+    }
+    if (users.find(u => u.id === newUser.id.trim())) {
+      alert("このIDは既に使用されています");
+      return;
+    }
+
+    const password = generatePassword();
+    const newUserData = {
+      id: newUser.id.trim(),
+      name: newUser.name.trim(),
+      role: newUser.role,
+      password: password,
+      createdAt: new Date().toISOString().slice(0, 10)
+    };
+
+    setUsers(prev => [...prev, newUserData]);
+    alert(`ユーザーを作成しました\nID: ${newUserData.id}\nパスワード: ${password}\n※パスワードを安全に保管してください`);
+    setNewUser({ id: "", name: "", role: "parent" });
+  };
+
+  const deleteUser = (userId) => {
+    if (userId === "admin") {
+      alert("管理者アカウントは削除できません");
+      return;
+    }
+    if (confirm(`ユーザー「${userId}」を削除しますか？`)) {
+      setUsers(prev => prev.filter(u => u.id !== userId));
     }
   };
 
@@ -386,6 +434,97 @@ export default function App() {
             </div>
           )}
           </section>
+
+          {/* ユーザー管理 - 管理者専用 */}
+          {user?.role === "admin" && (
+            <section className="card-enhanced">
+              <h2>🔐 ユーザー管理（管理者専用）</h2>
+
+              {/* 新規ユーザー作成 */}
+              <div style={{marginBottom: 24}}>
+                <h3 style={{fontSize: '16px', marginBottom: '12px'}}>新規ユーザー作成</h3>
+                <div className="row-3">
+                  <div>
+                    <label>ユーザーID</label>
+                    <input
+                      value={newUser.id}
+                      onChange={e => setNewUser(prev => ({...prev, id: e.target.value}))}
+                      placeholder="例）tanaka"
+                    />
+                  </div>
+                  <div>
+                    <label>名前</label>
+                    <input
+                      value={newUser.name}
+                      onChange={e => setNewUser(prev => ({...prev, name: e.target.value}))}
+                      placeholder="例）田中太郎"
+                    />
+                  </div>
+                  <div>
+                    <label>役割</label>
+                    <select
+                      value={newUser.role}
+                      onChange={e => setNewUser(prev => ({...prev, role: e.target.value}))}
+                    >
+                      <option value="parent">保護者</option>
+                      <option value="coach">コーチ</option>
+                      <option value="admin">管理者</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="actions" style={{marginTop: 12}}>
+                  <button className="primary" onClick={addUser}>ユーザー作成</button>
+                  <span className="kicker">※パスワードは自動生成されます</span>
+                </div>
+              </div>
+
+              {/* ユーザー一覧 */}
+              <div>
+                <h3 style={{fontSize: '16px', marginBottom: '12px'}}>登録ユーザー一覧</h3>
+                <div className="list">
+                  {users.map(u => (
+                    <div key={u.id} style={{
+                      padding: "12px",
+                      background: "#f8f9fa",
+                      borderRadius: "8px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center"
+                    }}>
+                      <div>
+                        <div><strong>{u.name}</strong> ({u.id})</div>
+                        <div className="kicker">
+                          役割: {u.role === 'admin' ? '管理者' : u.role === 'coach' ? 'コーチ' : '保護者'} |
+                          作成日: {u.createdAt}
+                        </div>
+                      </div>
+                      <div className="actions">
+                        <button
+                          className="ghost"
+                          style={{padding: "4px 8px", fontSize: "12px"}}
+                          onClick={() => deleteUser(u.id)}
+                          disabled={u.id === "admin"}
+                        >
+                          {u.id === "admin" ? "削除不可" : "削除"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="actions" style={{marginTop: 12}}>
+                  <button className="ghost" onClick={() => {
+                    const data = JSON.stringify(users, null, 2);
+                    const blob = new Blob([data], {type: "application/json"});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url; a.download = "users.json"; a.click();
+                    URL.revokeObjectURL(url);
+                  }}>ユーザーデータ書き出し</button>
+                  <span className="kicker">登録ユーザー数：{users.length}人</span>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
 
         {/* 応援コメント - サイドバー */}
