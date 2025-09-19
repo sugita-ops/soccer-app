@@ -42,6 +42,13 @@ const emptyMatch = (formation = "4-4-2") => ({
   notes: "",
   formation: formation,
   lineup: FORMATIONS[formation].reduce((acc,k)=> (acc[k]="", acc), {}),
+  // 新機能用フィールド
+  photos: [], // 写真URL配列
+  youtubeUrl: "", // YouTubeリンク
+  substitutions: [], // 交代履歴 [{minute: 45, out: "playerId", in: "playerId", reason: "戦術変更"}]
+  // 練習試合用複数試合記録
+  isMultiMatch: false, // 練習試合で複数試合記録するかのフラグ
+  subMatches: [], // 複数試合の場合のサブ試合 [{matchNumber: 1, goalsFor: 2, goalsAgainst: 1, lineup: {}, substitutions: []}]
 });
 
 const useLocal = (key, initial) => {
@@ -89,6 +96,10 @@ export default function App() {
   // ユーザー管理機能
   const [newUser, setNewUser] = useState({ id: "", name: "", role: "parent" });
 
+  // 新機能用の状態
+  const [newPhoto, setNewPhoto] = useState("");
+  const [newSubstitution, setNewSubstitution] = useState({ minute: "", out: "", in: "", reason: "" });
+
   const addUser = () => {
     if (!newUser.id.trim() || !newUser.name.trim()) {
       alert("IDと名前を入力してください");
@@ -121,6 +132,53 @@ export default function App() {
     if (confirm(`ユーザー「${userId}」を削除しますか？`)) {
       setUsers(prev => prev.filter(u => u.id !== userId));
     }
+  };
+
+  // 新機能用のハンドラー関数
+  const addPhoto = () => {
+    if (!newPhoto.trim()) return;
+    setMatch(m => ({...m, photos: [...(m.photos || []), newPhoto.trim()]}));
+    setNewPhoto("");
+  };
+
+  const removePhoto = (index) => {
+    setMatch(m => ({...m, photos: m.photos.filter((_, i) => i !== index)}));
+  };
+
+  const addSubstitution = () => {
+    if (!newSubstitution.minute || !newSubstitution.out || !newSubstitution.in) {
+      alert("交代時間、OUT選手、IN選手を入力してください");
+      return;
+    }
+    const substitution = {
+      id: crypto.randomUUID(),
+      minute: parseInt(newSubstitution.minute),
+      out: newSubstitution.out,
+      in: newSubstitution.in,
+      reason: newSubstitution.reason || ""
+    };
+    setMatch(m => ({...m, substitutions: [...(m.substitutions || []), substitution]}));
+    setNewSubstitution({ minute: "", out: "", in: "", reason: "" });
+  };
+
+  const removeSubstitution = (id) => {
+    setMatch(m => ({...m, substitutions: m.substitutions.filter(s => s.id !== id)}));
+  };
+
+  const toggleMultiMatch = () => {
+    setMatch(m => ({...m, isMultiMatch: !m.isMultiMatch, subMatches: []}));
+  };
+
+  const addSubMatch = () => {
+    const subMatch = {
+      id: crypto.randomUUID(),
+      matchNumber: (match.subMatches?.length || 0) + 1,
+      goalsFor: "",
+      goalsAgainst: "",
+      lineup: {...match.lineup},
+      substitutions: []
+    };
+    setMatch(m => ({...m, subMatches: [...(m.subMatches || []), subMatch]}));
   };
 
   const logout = () => setUser(null);
@@ -347,6 +405,72 @@ export default function App() {
             </div>
           </div>
 
+          {/* 新機能: 写真とYouTubeリンク */}
+          <div className="stack" style={{marginTop:12}}>
+            <div className="card" style={{padding:12}}>
+              <h3 style={{fontSize: '16px', marginBottom: '12px'}}>📷 写真・動画</h3>
+
+              {/* YouTube リンク */}
+              <div style={{marginBottom:12}}>
+                <label>YouTube動画URL</label>
+                <input
+                  value={match.youtubeUrl || ""}
+                  onChange={e=>setField("youtubeUrl", e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+              </div>
+
+              {/* 写真 */}
+              <div>
+                <label>写真URL</label>
+                <div className="row" style={{gap: 8}}>
+                  <input
+                    value={newPhoto}
+                    onChange={e=>setNewPhoto(e.target.value)}
+                    placeholder="https://example.com/photo.jpg"
+                  />
+                  <button className="primary" onClick={addPhoto} style={{whiteSpace: 'nowrap'}}>
+                    追加
+                  </button>
+                </div>
+
+                {match.photos && match.photos.length > 0 && (
+                  <div style={{marginTop: 8}}>
+                    <div className="kicker" style={{marginBottom: 4}}>登録済み写真:</div>
+                    <div className="list">
+                      {match.photos.map((photo, index) => (
+                        <div key={index} style={{
+                          padding: "8px 12px",
+                          background: "#f8f9fa",
+                          borderRadius: "8px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}>
+                          <span style={{
+                            fontSize: "12px",
+                            wordBreak: "break-all",
+                            flex: 1,
+                            marginRight: 8
+                          }}>
+                            {photo}
+                          </span>
+                          <button
+                            className="ghost"
+                            style={{padding: "4px 8px", fontSize: "12px"}}
+                            onClick={() => removePhoto(index)}
+                          >
+                            削除
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="stack" style={{marginTop:12}}>
             <div className="card" style={{padding:12}}>
               <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
@@ -388,6 +512,208 @@ export default function App() {
               </div>
             </div>
 
+            {/* 交代履歴セクション */}
+            <div className="card" style={{padding:12}}>
+              <h3 style={{fontSize: '16px', marginBottom: '12px'}}>🔄 交代履歴</h3>
+
+              {/* 交代登録 */}
+              <div className="row-3" style={{gap: 8, marginBottom: 12}}>
+                <div>
+                  <label>時間（分）</label>
+                  <input
+                    type="number"
+                    value={newSubstitution.minute}
+                    onChange={e=>setNewSubstitution(prev => ({...prev, minute: e.target.value}))}
+                    placeholder="45"
+                    min="0"
+                    max="120"
+                  />
+                </div>
+                <div>
+                  <label>OUT選手</label>
+                  <select
+                    value={newSubstitution.out}
+                    onChange={e=>setNewSubstitution(prev => ({...prev, out: e.target.value}))}
+                  >
+                    <option value="">選択...</option>
+                    {playerOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label>IN選手</label>
+                  <select
+                    value={newSubstitution.in}
+                    onChange={e=>setNewSubstitution(prev => ({...prev, in: e.target.value}))}
+                  >
+                    <option value="">選択...</option>
+                    {playerOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{marginBottom: 12}}>
+                <label>交代理由（任意）</label>
+                <input
+                  value={newSubstitution.reason}
+                  onChange={e=>setNewSubstitution(prev => ({...prev, reason: e.target.value}))}
+                  placeholder="戦術変更、怪我、疲労など"
+                />
+              </div>
+
+              <div className="actions" style={{marginBottom: 12}}>
+                <button className="primary" onClick={addSubstitution}>
+                  交代を記録
+                </button>
+              </div>
+
+              {/* 交代履歴一覧 */}
+              {match.substitutions && match.substitutions.length > 0 && (
+                <div>
+                  <div className="kicker" style={{marginBottom: 8}}>交代履歴:</div>
+                  <div className="list">
+                    {match.substitutions
+                      .sort((a, b) => a.minute - b.minute)
+                      .map(sub => {
+                        const outPlayer = players.find(p => p.id === sub.out);
+                        const inPlayer = players.find(p => p.id === sub.in);
+                        return (
+                          <div key={sub.id} style={{
+                            padding: "8px 12px",
+                            background: "#f8f9fa",
+                            borderRadius: "8px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                          }}>
+                            <div style={{flex: 1}}>
+                              <strong>{sub.minute}分</strong>
+                              <span style={{margin: "0 8px"}}>
+                                ⬅️ {outPlayer ? (outPlayer.num ? `#${outPlayer.num} ${outPlayer.name}` : outPlayer.name) : "不明"}
+                              </span>
+                              <span style={{margin: "0 8px"}}>
+                                ➡️ {inPlayer ? (inPlayer.num ? `#${inPlayer.num} ${inPlayer.name}` : inPlayer.name) : "不明"}
+                              </span>
+                              {sub.reason && (
+                                <div className="kicker" style={{marginTop: 2}}>
+                                  理由: {sub.reason}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              className="ghost"
+                              style={{padding: "4px 8px", fontSize: "12px"}}
+                              onClick={() => removeSubstitution(sub.id)}
+                            >
+                              削除
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 練習試合用の複数試合記録 */}
+            {match.type === "練習試合" && (
+              <div className="card" style={{padding:12}}>
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
+                  <h3 style={{fontSize: '16px', margin: 0}}>⚽ 練習試合（複数試合記録）</h3>
+                  <label style={{display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer'}}>
+                    <input
+                      type="checkbox"
+                      checked={match.isMultiMatch || false}
+                      onChange={toggleMultiMatch}
+                    />
+                    <span style={{fontSize: '14px'}}>複数試合を記録</span>
+                  </label>
+                </div>
+
+                {match.isMultiMatch && (
+                  <>
+                    <div className="actions" style={{marginBottom: 12}}>
+                      <button className="primary" onClick={addSubMatch}>
+                        試合を追加
+                      </button>
+                      <span className="kicker">
+                        {match.subMatches?.length || 0}試合記録済み
+                      </span>
+                    </div>
+
+                    {match.subMatches && match.subMatches.length > 0 && (
+                      <div className="list">
+                        {match.subMatches.map((subMatch, index) => (
+                          <div key={subMatch.id} style={{
+                            padding: "12px",
+                            background: "#f8f9fa",
+                            borderRadius: "8px",
+                            border: "1px solid #e5e7eb"
+                          }}>
+                            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8}}>
+                              <strong>第{subMatch.matchNumber}試合</strong>
+                              <button
+                                className="ghost"
+                                style={{padding: "4px 8px", fontSize: "12px"}}
+                                onClick={() => {
+                                  setMatch(m => ({
+                                    ...m,
+                                    subMatches: m.subMatches.filter(sm => sm.id !== subMatch.id)
+                                  }));
+                                }}
+                              >
+                                削除
+                              </button>
+                            </div>
+                            <div className="row-3" style={{gap: 8}}>
+                              <div>
+                                <label>得点</label>
+                                <input
+                                  value={subMatch.goalsFor}
+                                  onChange={e => {
+                                    setMatch(m => ({
+                                      ...m,
+                                      subMatches: m.subMatches.map(sm =>
+                                        sm.id === subMatch.id ? {...sm, goalsFor: e.target.value} : sm
+                                      )
+                                    }));
+                                  }}
+                                  placeholder="2"
+                                />
+                              </div>
+                              <div>
+                                <label>失点</label>
+                                <input
+                                  value={subMatch.goalsAgainst}
+                                  onChange={e => {
+                                    setMatch(m => ({
+                                      ...m,
+                                      subMatches: m.subMatches.map(sm =>
+                                        sm.id === subMatch.id ? {...sm, goalsAgainst: e.target.value} : sm
+                                      )
+                                    }));
+                                  }}
+                                  placeholder="1"
+                                />
+                              </div>
+                              <div style={{display: 'flex', alignItems: 'end'}}>
+                                <span className="kicker">
+                                  {subMatch.goalsFor || 0} - {subMatch.goalsAgainst || 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             <div className="actions">
               <button className="primary" onClick={saveMatch}>試合を保存</button>
               <button className="ghost" onClick={()=>{
@@ -415,11 +741,92 @@ export default function App() {
                   <div style={{display:"flex", gap:8, alignItems:"center", flexWrap:"wrap"}}>
                     <span className="badge">{m.type}</span>
                     <strong>{(m.date||"").replace("T"," ")} / vs {m.opponent||"-"} @ {m.venue||"-"}</strong>
-                    <span>｜{m.goalsFor||0} - {m.goalsAgainst||0}</span>
+                    {/* 複数試合記録の場合は集計表示 */}
+                    {m.isMultiMatch && m.subMatches?.length > 0 ? (
+                      <span>｜{m.subMatches.length}試合 ({
+                        m.subMatches.map((sm, i) => `${sm.goalsFor||0}-${sm.goalsAgainst||0}`).join(", ")
+                      })</span>
+                    ) : (
+                      <span>｜{m.goalsFor||0} - {m.goalsAgainst||0}</span>
+                    )}
                     <span>｜{m.formation || "4-4-2"}</span>
                     {m.mvp && <span>｜MVP: {m.mvp}</span>}
                   </div>
                   {m.notes && <div style={{marginTop:6}} className="kicker">{m.notes}</div>}
+
+                  {/* YouTube動画リンク */}
+                  {m.youtubeUrl && (
+                    <div style={{marginTop: 6}}>
+                      <a
+                        href={m.youtubeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: 'var(--brand)',
+                          textDecoration: 'none',
+                          fontSize: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}
+                      >
+                        🎥 YouTube動画を見る
+                      </a>
+                    </div>
+                  )}
+
+                  {/* 写真表示 */}
+                  {m.photos && m.photos.length > 0 && (
+                    <div style={{marginTop: 6}}>
+                      <div className="kicker" style={{marginBottom: 4}}>写真:</div>
+                      <div style={{display: 'flex', gap: 4, flexWrap: 'wrap'}}>
+                        {m.photos.slice(0, 3).map((photo, index) => (
+                          <a
+                            key={index}
+                            href={photo}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontSize: '12px',
+                              color: 'var(--brand)',
+                              textDecoration: 'none'
+                            }}
+                          >
+                            📷 写真{index + 1}
+                          </a>
+                        ))}
+                        {m.photos.length > 3 && (
+                          <span className="kicker" style={{fontSize: '12px'}}>
+                            他{m.photos.length - 3}枚
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 交代履歴 */}
+                  {m.substitutions && m.substitutions.length > 0 && (
+                    <div style={{marginTop: 6}}>
+                      <div className="kicker" style={{marginBottom: 4}}>交代:</div>
+                      <div style={{fontSize: '12px', lineHeight: '1.4'}}>
+                        {m.substitutions
+                          .sort((a, b) => a.minute - b.minute)
+                          .map((sub, index) => {
+                            const outPlayer = players.find(p => p.id === sub.out);
+                            const inPlayer = players.find(p => p.id === sub.in);
+                            return (
+                              <div key={sub.id || index} style={{marginBottom: 2}}>
+                                {sub.minute}分: {outPlayer ? (outPlayer.num ? `#${outPlayer.num} ${outPlayer.name}` : outPlayer.name) : "不明"}
+                                {" → "}
+                                {inPlayer ? (inPlayer.num ? `#${inPlayer.num} ${inPlayer.name}` : inPlayer.name) : "不明"}
+                                {sub.reason && ` (${sub.reason})`}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
                   <footer>
                     先発:{" "}
                     {(FORMATIONS[m.formation || "4-4-2"] || FORMATIONS["4-4-2"]).map(k=>{
