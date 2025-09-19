@@ -230,18 +230,17 @@ export default function App() {
   return (
     <div className="container fade-in">
       {/* ヒーローセクション */}
-      <section className="relative overflow-hidden min-h-[300px] md:min-h-[380px] rounded-2xl shadow-lg">
+      <section className="relative rounded-2xl overflow-hidden shadow-sm mb-6">
         <img
-          src="/img/miyachu-header.png"
-          alt=""
+          src="/img/miyachu-header.jpg"
+          onError={(e)=>{e.currentTarget.src='/img/miyachu-header.png';}}
+          alt="宮中サッカー部"
           className="absolute inset-0 w-full h-full object-cover"
-          fetchpriority="high"
         />
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="relative z-10 px-6 py-8 md:px-10 md:py-12 text-white text-center flex flex-col justify-center h-full">
-          <h1 style={{fontSize: '32px', margin: '0 0 12px', textShadow: '0 2px 4px rgba(0,0,0,0.3)'}}>⚽ 行け！宮中サッカー部</h1>
-          <p style={{fontSize: '16px', opacity: '0.9', margin: '0 0 16px'}}>チーム管理システム</p>
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap'}}>
+        <div className="relative z-10 bg-black/30 text-white p-6">
+          <h1 className="text-2xl md:text-3xl font-semibold">⚽ 行け！宮中サッカー部</h1>
+          <p className="opacity-90">チーム管理システム</p>
+          <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
             <span>ようこそ、{user.name}さん</span>
             <button className="ghost" onClick={logout} style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white'}}>
               ログアウト
