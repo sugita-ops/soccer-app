@@ -349,14 +349,13 @@ export default function App() {
   return (
     <div className="container fade-in">
       {/* ヒーローセクション */}
-      <section className="relative rounded-2xl overflow-hidden shadow-sm mb-6">
+      <section className="relative overflow-hidden rounded-2xl shadow-sm bg-white mb-6">
         <img
-          src="/img/miyachu-header.jpg"
-          onError={(e)=>{e.currentTarget.src='/img/miyachu-header.png';}}
+          src="/img/miyachu-header.png"
           alt="宮中サッカー部"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="block mx-auto w-full h-auto max-h-[360px] sm:max-h-[420px] md:max-h-[500px] object-contain"
         />
-        <div className="relative z-10 bg-black/30 text-white p-6">
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/40 to-transparent text-white p-6">
           <h1 className="text-2xl md:text-3xl font-semibold">⚽ 行け！宮中サッカー部</h1>
           <p className="opacity-90">チーム管理システム</p>
           <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
@@ -371,52 +370,6 @@ export default function App() {
       <div className="dashboard-grid">
         {/* メインコンテンツエリア */}
         <div className="stack">
-          {/* 選手登録・管理 */}
-          <section className="card-enhanced">
-          <h2>選手登録・管理</h2>
-          <div className="row">
-            <div>
-              <label>選手名</label>
-              <input value={name} onChange={e=>setName(e.target.value)} placeholder="例）佐藤 太郎" />
-            </div>
-            <div>
-              <label>背番号</label>
-              <input value={num} onChange={e=>setNum(e.target.value)} placeholder="10" />
-            </div>
-          </div>
-          <div className="actions" style={{marginTop:8}}>
-            <button className="primary" onClick={addPlayer}>追加</button>
-            <button className="ghost" onClick={()=>{
-              const data = JSON.stringify(players, null, 2);
-              const blob = new Blob([data], {type:"application/json"});
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url; a.download = "players.json"; a.click();
-              URL.revokeObjectURL(url);
-            }}>選手データ書き出し</button>
-            <span className="kicker">登録人数：{players.length}人</span>
-          </div>
-
-          {players.length > 0 && (
-            <div style={{marginTop:12}}>
-              <div className="list">
-                {playerOptions.map(p => (
-                  <div key={p.value} style={{padding:"8px 12px", background:"#f8f9fa", borderRadius:"8px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-                    <span>{p.label}</span>
-                    <button
-                      className="ghost"
-                      style={{padding:"4px 8px", fontSize:"12px"}}
-                      onClick={()=> setPlayers(prev => prev.filter(pl => pl.id !== p.value))}
-                    >
-                      削除
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-
           {/* 試合記録 */}
           <section className="card-enhanced">
           <h2>試合記録</h2>
@@ -906,6 +859,52 @@ export default function App() {
               <button className="ghost" onClick={()=> window.print()}>印刷</button>
             </div>
           </div>
+        </section>
+
+          {/* 選手登録・管理 */}
+          <section className="card-enhanced">
+          <h2>選手登録・管理</h2>
+          <div className="row">
+            <div>
+              <label>選手名</label>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="例）佐藤 太郎" />
+            </div>
+            <div>
+              <label>背番号</label>
+              <input value={num} onChange={e=>setNum(e.target.value)} placeholder="10" />
+            </div>
+          </div>
+          <div className="actions" style={{marginTop:8}}>
+            <button className="primary" onClick={addPlayer}>追加</button>
+            <button className="ghost" onClick={()=>{
+              const data = JSON.stringify(players, null, 2);
+              const blob = new Blob([data], {type:"application/json"});
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url; a.download = "players.json"; a.click();
+              URL.revokeObjectURL(url);
+            }}>選手データ書き出し</button>
+            <span className="kicker">登録人数：{players.length}人</span>
+          </div>
+
+          {players.length > 0 && (
+            <div style={{marginTop:12}}>
+              <div className="list">
+                {playerOptions.map(p => (
+                  <div key={p.value} style={{padding:"8px 12px", background:"#f8f9fa", borderRadius:"8px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                    <span>{p.label}</span>
+                    <button
+                      className="ghost"
+                      style={{padding:"4px 8px", fontSize:"12px"}}
+                      onClick={()=> setPlayers(prev => prev.filter(pl => pl.id !== p.value))}
+                    >
+                      削除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
           {/* 試合履歴 */}
