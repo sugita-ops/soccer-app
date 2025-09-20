@@ -1,5 +1,6 @@
 import { ui } from "./ui";
 import React, { useEffect, useMemo, useState } from "react";
+import { loadJSON, saveJSON, exportJSON, importJSON, uid } from './lib/jsonStore';
 
 const FORMATIONS = {
   "4-4-2": [
@@ -360,6 +361,44 @@ export default function App() {
           <p className="opacity-90">チーム管理システム</p>
           <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
             <span>ようこそ、{user.name}さん</span>
+            <button
+              className="ghost"
+              onClick={()=>{ const cur=loadJSON(); saveJSON(cur); alert('保存しました'); }}
+              style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontSize: '12px', padding: '8px 12px'}}
+            >
+              保存
+            </button>
+            <button
+              className="ghost"
+              onClick={()=>{ const cur=loadJSON(); alert('読み込み完了\n' + Object.keys(cur).join(', ')); }}
+              style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontSize: '12px', padding: '8px 12px'}}
+            >
+              読み込み
+            </button>
+            <button
+              className="ghost"
+              onClick={()=> exportJSON()}
+              style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontSize: '12px', padding: '8px 12px'}}
+            >
+              JSON書き出し
+            </button>
+            <label
+              className="ghost"
+              style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontSize: '12px', padding: '8px 12px', cursor: 'pointer'}}
+            >
+              JSON読み込み
+              <input
+                type="file"
+                accept="application/json"
+                style={{display: 'none'}}
+                onChange={async (e)=>{
+                  const f=e.target.files?.[0];
+                  if(!f) return;
+                  await importJSON(f);
+                  location.reload();
+                }}
+              />
+            </label>
             <button className="ghost" onClick={logout} style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white'}}>
               ログアウト
             </button>
@@ -1194,4 +1233,35 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+
+// ▼ 例：試合を追加するユーティリティ（既存UIのonSubmitから呼ぶ）
+export function addMatch(form) {
+  const db = loadJSON();
+  const match = {
+    id: uid('m'),
+    date: form.date || new Date().toISOString().slice(0,10),
+    kind: form.kind || '練習試合',
+    opponent: form.opponent || '',
+    venue: form.venue || '',
+    memo: form.memo || '',
+    goals_for: Number(form.goals_for||0),
+    goals_against: Number(form.goals_against||0)
+  };
+  db.matches.push(match);
+  saveJSON(db);
+  return match;
+}
+
+// ▼ 例：先発/交代の登録
+export function addStarting(match_id, player_id, position_key){
+  const db = loadJSON();
+  db.lineups.push({ match_id, player_id, position_key });
+  saveJSON(db);
+}
+export function addSub(match_id, out_player_id, in_player_id, minute, reason=''){
+  const db = loadJSON();
+  db.subs.push({ id: uid('s'), match_id, out_player_id, in_player_id, minute:Number(minute||0), reason });
+  saveJSON(db);
 }
