@@ -99,6 +99,8 @@ export default function App() {
   // 新機能用の状態
   const [newPhoto, setNewPhoto] = useState("");
   const [newSubstitution, setNewSubstitution] = useState({ minute: "", out: "", in: "", reason: "" });
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const addUser = () => {
     if (!newUser.id.trim() || !newUser.name.trim()) {
@@ -139,6 +141,65 @@ export default function App() {
     if (!newPhoto.trim()) return;
     setMatch(m => ({...m, photos: [...(m.photos || []), newPhoto.trim()]}));
     setNewPhoto("");
+  };
+
+  // ファイルをBase64に変換してphotosに追加
+  const handleFileUpload = async (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      alert('画像ファイルを選択してください');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB制限
+      alert('ファイルサイズは5MB以下にしてください');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        setMatch(m => ({...m, photos: [...(m.photos || []), base64]}));
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        alert('ファイルの読み込みに失敗しました');
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      alert('ファイルのアップロードに失敗しました');
+      setUploading(false);
+    }
+  };
+
+  // ドラッグ&ドロップハンドラー
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  };
+
+  // ファイル選択ハンドラー
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      handleFileUpload(file);
+    }
   };
 
   const removePhoto = (index) => {
@@ -422,16 +483,101 @@ export default function App() {
 
               {/* 写真 */}
               <div>
-                <label>写真URL</label>
-                <div className="row" style={{gap: 8}}>
+                <label>写真追加</label>
+
+                {/* URL入力 */}
+                <div className="row" style={{gap: 8, marginBottom: 12}}>
                   <input
                     value={newPhoto}
                     onChange={e=>setNewPhoto(e.target.value)}
                     placeholder="https://example.com/photo.jpg"
                   />
                   <button className="primary" onClick={addPhoto} style={{whiteSpace: 'nowrap'}}>
-                    追加
+                    URL追加
                   </button>
+                </div>
+
+                {/* ファイルアップロード */}
+                <div style={{marginBottom: 12}}>
+                  <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
+                    {/* ファイル選択ボタン */}
+                    <label style={{
+                      display: 'inline-block',
+                      padding: '12px 16px',
+                      background: 'var(--brand)',
+                      color: 'white',
+                      borderRadius: '999px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      border: 'none'
+                    }}>
+                      📁 ファイル選択
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        style={{display: 'none'}}
+                      />
+                    </label>
+
+                    {/* カメラ撮影ボタン（スマホ用） */}
+                    <label style={{
+                      display: 'inline-block',
+                      padding: '12px 16px',
+                      background: 'var(--brand)',
+                      color: 'white',
+                      borderRadius: '999px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      border: 'none'
+                    }}>
+                      📷 カメラ撮影
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleFileSelect}
+                        style={{display: 'none'}}
+                      />
+                    </label>
+
+                    {uploading && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        color: 'var(--ink-2)',
+                        fontSize: '14px'
+                      }}>
+                        ⏳ アップロード中...
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ドラッグ&ドロップエリア */}
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  style={{
+                    border: `2px dashed ${isDragOver ? 'var(--brand)' : 'var(--line)'}`,
+                    borderRadius: '12px',
+                    padding: '24px',
+                    textAlign: 'center',
+                    background: isDragOver ? '#f0f9f0' : '#f8f9fa',
+                    color: 'var(--ink-2)',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    marginBottom: 12
+                  }}
+                >
+                  {isDragOver ? (
+                    <>📤 ここにドロップしてください</>
+                  ) : (
+                    <>🖼️ ここに画像をドラッグ&ドロップ<br/>（またはクリックしてファイル選択）</>
+                  )}
                 </div>
 
                 {match.photos && match.photos.length > 0 && (
@@ -445,16 +591,49 @@ export default function App() {
                           borderRadius: "8px",
                           display: "flex",
                           justifyContent: "space-between",
-                          alignItems: "center"
+                          alignItems: "center",
+                          gap: 8
                         }}>
-                          <span style={{
-                            fontSize: "12px",
-                            wordBreak: "break-all",
-                            flex: 1,
-                            marginRight: 8
-                          }}>
-                            {photo}
-                          </span>
+                          <div style={{display: 'flex', alignItems: 'center', gap: 8, flex: 1}}>
+                            {/* 画像プレビュー */}
+                            {photo.startsWith('data:image/') ? (
+                              <img
+                                src={photo}
+                                alt="プレビュー"
+                                style={{
+                                  width: '40px',
+                                  height: '40px',
+                                  borderRadius: '6px',
+                                  objectFit: 'cover',
+                                  border: '1px solid var(--line)'
+                                }}
+                              />
+                            ) : (
+                              <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '6px',
+                                background: 'var(--line)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '16px'
+                              }}>
+                                🔗
+                              </div>
+                            )}
+                            <span style={{
+                              fontSize: "12px",
+                              wordBreak: "break-all",
+                              flex: 1,
+                              color: photo.startsWith('data:image/') ? 'var(--ink-2)' : 'var(--ink)'
+                            }}>
+                              {photo.startsWith('data:image/') ?
+                                `画像ファイル (${Math.round(photo.length / 1024)}KB)` :
+                                photo
+                              }
+                            </span>
+                          </div>
                           <button
                             className="ghost"
                             style={{padding: "4px 8px", fontSize: "12px"}}
@@ -781,19 +960,40 @@ export default function App() {
                       <div className="kicker" style={{marginBottom: 4}}>写真:</div>
                       <div style={{display: 'flex', gap: 4, flexWrap: 'wrap'}}>
                         {m.photos.slice(0, 3).map((photo, index) => (
-                          <a
-                            key={index}
-                            href={photo}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              fontSize: '12px',
-                              color: 'var(--brand)',
-                              textDecoration: 'none'
-                            }}
-                          >
-                            📷 写真{index + 1}
-                          </a>
+                          photo.startsWith('data:image/') ? (
+                            <img
+                              key={index}
+                              src={photo}
+                              alt={`写真${index + 1}`}
+                              style={{
+                                width: '60px',
+                                height: '60px',
+                                borderRadius: '6px',
+                                objectFit: 'cover',
+                                border: '1px solid var(--line)',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => {
+                                // 画像を新しいタブで開く
+                                const newWindow = window.open();
+                                newWindow.document.write(`<img src="${photo}" style="max-width:100%;max-height:100%;">`);
+                              }}
+                            />
+                          ) : (
+                            <a
+                              key={index}
+                              href={photo}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                fontSize: '12px',
+                                color: 'var(--brand)',
+                                textDecoration: 'none'
+                              }}
+                            >
+                              📷 写真{index + 1}
+                            </a>
+                          )
                         ))}
                         {m.photos.length > 3 && (
                           <span className="kicker" style={{fontSize: '12px'}}>
