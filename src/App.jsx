@@ -1,6 +1,7 @@
 import { ui } from "./ui";
 import React, { useEffect, useMemo, useState } from "react";
 import { loadJSON, saveJSON, exportJSON, importJSON, uid } from './lib/jsonStore';
+import PlayerImport from './components/PlayerImport';
 
 const FORMATIONS = {
   "4-4-2": [
@@ -903,6 +904,11 @@ export default function App() {
           {/* 選手登録・管理 */}
           <section className="card-enhanced">
           <h2>選手登録・管理</h2>
+
+          {/* JSON取り込み */}
+          <div style={{marginBottom: 16}}>
+            <PlayerImport />
+          </div>
           <div className="row">
             <div>
               <label>選手名</label>

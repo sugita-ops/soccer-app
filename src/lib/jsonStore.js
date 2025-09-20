@@ -48,3 +48,46 @@ export async function importJSON(file) {
 export function uid(prefix="id") {
   return `${prefix}_${Math.random().toString(36).slice(2,8)}${Date.now().toString(36)}`;
 }
+
+// 氏名+背番号を1件追加（重複スキップ）
+export function addPlayer({ name, jersey }) {
+  const db = loadJSON();
+  const number = Number(jersey);
+  if (!name || !Number.isFinite(number)) return { added: 0, reason: "invalid" };
+  const exists = db.players.some(p => p.number === number || p.name === name.trim());
+  if (exists) return { added: 0, reason: "duplicate" };
+  db.players.push({ id: uid("p"), name: name.trim(), number });
+  saveJSON(db);
+  return { added: 1 };
+}
+
+// 配列 [{name, jersey}] をまとめ取り込み
+export function importPlayers(rows, { dedupeBy = "jersey" } = {}) {
+  const db = loadJSON();
+  let added = 0;
+  const skipped = [];
+  for (const row of (rows || [])) {
+    const name = row?.name?.trim();
+    const number = Number(row?.jersey);
+    if (!name || !Number.isFinite(number)) {
+      skipped.push({ row, reason: "invalid" });
+      continue;
+    }
+    const dup = db.players.some(p => dedupeBy === "jersey" ? p.number === number : p.name === name);
+    if (dup) {
+      skipped.push({ row, reason: "duplicate" });
+      continue;
+    }
+    db.players.push({ id: uid("p"), name, number });
+    added++;
+  }
+  saveJSON(db);
+  return { added, skipped };
+}
+
+// ファイルから取り込み
+export async function importPlayersFromFile(file) {
+  const text = await file.text();
+  const rows = JSON.parse(text);
+  return importPlayers(rows, { dedupeBy: "jersey" });
+}
