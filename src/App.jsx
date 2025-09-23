@@ -1,7 +1,9 @@
-import { ui } from "./ui";
+// import { ui } from "./ui";
 import React, { useEffect, useMemo, useState } from "react";
 import { loadJSON, saveJSON, exportJSON, importJSON, uid } from './lib/jsonStore';
+import { syncWithCloud, savePlayersToCloud, syncFromCloudUpsert } from './lib/cloudSync';
 import PlayerImport from './components/PlayerImport';
+import { useToast, ToastContainer } from './components/Toast';
 
 const FORMATIONS = {
   "4-4-2": [
@@ -63,6 +65,9 @@ const useLocal = (key, initial) => {
 };
 
 export default function App() {
+  // トースト通知
+  const toast = useToast();
+
   // ログイン管理
   const [user, setUser] = useLocal("currentUser", null);
   const [loginId, setLoginId] = useState("");
@@ -279,6 +284,101 @@ export default function App() {
     setPlayers(data.players || []);
   };
 
+  // クラウド同期状態
+  const [cloudPassword, setCloudPassword] = useState("");
+  const [isCloudLoading, setIsCloudLoading] = useState(false);
+
+  // 起動時にクラウドから同期
+  useEffect(() => {
+    const performInitialSync = async () => {
+      try {
+        const result = await syncWithCloud();
+        if (result.success && result.action === 'imported') {
+          refreshPlayers();
+          toast.success(result.message);
+        }
+      } catch (error) {
+        console.warn('初期同期失敗:', error);
+      }
+    };
+
+    performInitialSync();
+  }, []);
+
+  // クラウドに保存
+  const handleCloudSave = async () => {
+    if (!cloudPassword.trim()) {
+      toast.error("保存パスワードを入力してください");
+      return;
+    }
+
+    setIsCloudLoading(true);
+
+    try {
+      const db = loadJSON();
+      const result = await savePlayersToCloud(db.players, cloudPassword);
+
+      if (result.success) {
+        toast.success(result.message);
+        setCloudPassword(""); // パスワードをクリア
+      } else {
+        toast.error(result.error || "保存に失敗しました");
+      }
+    } catch (error) {
+      toast.error("ネットワークエラーまたは認証失敗");
+    } finally {
+      setIsCloudLoading(false);
+    }
+  };
+
+  // クラウドから読み込み
+  const handleCloudLoad = async () => {
+    setIsCloudLoading(true);
+
+    try {
+      const result = await syncWithCloud();
+
+      if (result.success) {
+        if (result.action === 'imported') {
+          refreshPlayers();
+          toast.success(result.message);
+        } else if (result.action === 'no_change') {
+          toast.info("ローカルデータが最新です");
+        }
+      } else {
+        toast.error(result.error || "読み込みに失敗しました");
+      }
+    } catch (error) {
+      toast.error("ネットワークエラーが発生しました");
+    } finally {
+      setIsCloudLoading(false);
+    }
+  };
+
+  // 今すぐ同期（アップサート）
+  const handleSyncNow = async () => {
+    setIsCloudLoading(true);
+
+    try {
+      const result = await syncFromCloudUpsert();
+
+      if (result.success) {
+        refreshPlayers();
+        if (result.action === 'upserted') {
+          toast.success(result.message);
+        } else if (result.action === 'no_data') {
+          toast.info(result.message);
+        }
+      } else {
+        toast.error(result.error || "同期に失敗しました");
+      }
+    } catch (error) {
+      toast.error("ネットワークエラーが発生しました");
+    } finally {
+      setIsCloudLoading(false);
+    }
+  };
+
   const addPlayer = () => {
     if(!name.trim()) return;
 
@@ -374,8 +474,10 @@ export default function App() {
   }
 
   return (
-    <div className="container fade-in">
-      {/* ヒーローセクション */}
+    <>
+      <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
+      <div className="container fade-in">
+        {/* ヒーローセクション */}
       <section className="relative overflow-hidden rounded-2xl shadow-sm bg-white mb-6">
         <img
           src="/img/miyachu-header.png"
@@ -425,6 +527,22 @@ export default function App() {
                 }}
               />
             </label>
+            <button
+              className="ghost"
+              onClick={handleCloudLoad}
+              disabled={isCloudLoading}
+              style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontSize: '12px', padding: '8px 12px'}}
+            >
+              {isCloudLoading ? "読込中..." : "☁️ クラウド読込"}
+            </button>
+            <button
+              className="ghost"
+              onClick={handleSyncNow}
+              disabled={isCloudLoading}
+              style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontSize: '12px', padding: '8px 12px'}}
+            >
+              {isCloudLoading ? "同期中..." : "🔄 クラウドから同期"}
+            </button>
             <button className="ghost" onClick={logout} style={{background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white'}}>
               ログアウト
             </button>
@@ -957,6 +1075,34 @@ export default function App() {
             <span className="kicker">登録人数：{players.length}人</span>
           </div>
 
+          {/* クラウド保存機能 */}
+          <div style={{marginTop: 16, padding: 12, background: '#f8f9fa', borderRadius: 8}}>
+            <div className="kicker" style={{marginBottom: 8}}>☁️ クラウド保存</div>
+            <div className="row" style={{gap: 8, alignItems: 'flex-end'}}>
+              <div style={{flex: 1}}>
+                <label>保存パスワード</label>
+                <input
+                  type="password"
+                  value={cloudPassword}
+                  onChange={e => setCloudPassword(e.target.value)}
+                  placeholder="認証用パスワードを入力"
+                  style={{fontSize: '14px'}}
+                />
+              </div>
+              <button
+                className="primary"
+                onClick={handleCloudSave}
+                disabled={isCloudLoading || !cloudPassword.trim()}
+                style={{minHeight: '44px', whiteSpace: 'nowrap'}}
+              >
+                {isCloudLoading ? "保存中..." : "☁️ クラウド保存"}
+              </button>
+            </div>
+            <div className="kicker" style={{marginTop: 4, fontSize: '11px'}}>
+              ※ 全チームで共有される選手データをクラウドに保存
+            </div>
+          </div>
+
           {players.length > 0 && (
             <div style={{marginTop:12}}>
               <div className="list">
@@ -1267,7 +1413,8 @@ export default function App() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

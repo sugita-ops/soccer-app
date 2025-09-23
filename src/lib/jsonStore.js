@@ -159,6 +159,102 @@ export async function importPlayersFromFile(file) {
   return importPlayers(rows, { dedupeBy: "jersey" });
 }
 
+// クラウドからの選手データをローカルにアップサート
+export function upsertPlayers(cloudPlayers) {
+  if (!Array.isArray(cloudPlayers)) {
+    throw new Error("cloudPlayersは配列である必要があります");
+  }
+
+  const db = loadJSON();
+  let added = 0;
+  let updated = 0;
+  const skipped = [];
+
+  // ローカル既存選手をMapで索引化（id優先、fallbackでjersey/number）
+  const localPlayersMap = new Map();
+  db.players.forEach((player, index) => {
+    if (player.id) {
+      localPlayersMap.set(`id:${player.id}`, { player, index });
+    }
+    if (player.number !== undefined && player.number !== null) {
+      localPlayersMap.set(`jersey:${player.number}`, { player, index });
+    }
+    if (player.jersey !== undefined && player.jersey !== null) {
+      localPlayersMap.set(`jersey:${player.jersey}`, { player, index });
+    }
+  });
+
+  for (const cloudPlayer of cloudPlayers) {
+    try {
+      // バリデーション
+      if (!cloudPlayer || typeof cloudPlayer !== 'object') {
+        skipped.push({ player: cloudPlayer, reason: 'プレイヤーオブジェクトが無効' });
+        continue;
+      }
+
+      const { id, jersey, number, name } = cloudPlayer;
+
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        skipped.push({ player: cloudPlayer, reason: 'nameが無効' });
+        continue;
+      }
+
+      // id または jersey/number をキーとして使用
+      let keyForLookup = null;
+      let lookupValue = null;
+
+      if (id) {
+        keyForLookup = `id:${id}`;
+        lookupValue = id;
+      } else if (jersey !== undefined && jersey !== null) {
+        keyForLookup = `jersey:${jersey}`;
+        lookupValue = jersey;
+      } else if (number !== undefined && number !== null) {
+        keyForLookup = `jersey:${number}`;
+        lookupValue = number;
+      }
+
+      if (!keyForLookup) {
+        skipped.push({ player: cloudPlayer, reason: 'idまたはjersey/numberが無い' });
+        continue;
+      }
+
+      // 既存選手を検索
+      const existing = localPlayersMap.get(keyForLookup);
+
+      if (existing) {
+        // 既存選手を更新
+        const updatedPlayer = {
+          ...existing.player,
+          ...cloudPlayer,
+          name: name.trim(),
+          // id が元々ある場合は保持、ない場合はクラウドから追加
+          id: existing.player.id || id || uid("p")
+        };
+
+        db.players[existing.index] = updatedPlayer;
+        updated++;
+      } else {
+        // 新規選手を追加
+        const newPlayer = {
+          id: id || uid("p"),
+          name: name.trim(),
+          number: number !== undefined ? number : jersey,
+          ...cloudPlayer
+        };
+
+        db.players.push(newPlayer);
+        added++;
+      }
+    } catch (error) {
+      skipped.push({ player: cloudPlayer, reason: `処理エラー: ${error.message}` });
+    }
+  }
+
+  saveJSON(db);
+  return { added, updated, skipped };
+}
+
 // デバッグ用関数をwindowオブジェクトに追加
 if (typeof window !== 'undefined') {
   window.dumpPlayers = function() {
