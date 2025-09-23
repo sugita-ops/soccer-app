@@ -69,7 +69,7 @@ export default function App() {
   const [loginPw, setLoginPw] = useState("");
 
   // ユーザー管理
-  const [users, setUsers] = useLocal("systemUsers", [
+  const [users, setUsers] = useLocal("soccer:users", [
     { id: "admin", password: "miyachu2024", role: "admin", name: "管理者", createdAt: "2024-01-01" },
     { id: "coach", password: "soccer123", role: "coach", name: "コーチ", createdAt: "2024-01-01" },
     { id: "parent", password: "supporter", role: "parent", name: "保護者", createdAt: "2024-01-01" }
@@ -262,21 +262,46 @@ export default function App() {
     setNewComment("");
   };
 
-  // 選手管理
-  const [players, setPlayers] = useLocal("players", []);
+  // 選手管理 - jsonStoreと統一
+  const [players, setPlayers] = useState([]);
   const [name, setName] = useState("");
   const [num, setNum] = useState("");
 
+  // 選手データをjsonStoreから読み込み
+  useEffect(() => {
+    const data = loadJSON();
+    setPlayers(data.players || []);
+  }, []);
+
+  // 選手データを更新する関数
+  const refreshPlayers = () => {
+    const data = loadJSON();
+    setPlayers(data.players || []);
+  };
+
   const addPlayer = () => {
     if(!name.trim()) return;
-    setPlayers(p => [...p, { id: crypto.randomUUID(), name: name.trim(), num: num.trim() }]);
-    setName(""); setNum("");
+
+    const db = loadJSON();
+    const newPlayer = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      number: Number(num.trim()) || 0
+    };
+
+    db.players.push(newPlayer);
+    saveJSON(db);
+
+    // UI を更新
+    refreshPlayers();
+    setName("");
+    setNum("");
   };
   const playerOptions = useMemo(
     () => players
       .slice()
-      .sort((a,b)=>(a.num||"").localeCompare(b.num||"", "ja", { numeric:true }))
-      .map(p => ({ value: p.id, label: p.num ? `#${p.num} ${p.name}` : p.name })),
+      .sort((a,b)=>(a.number||0) - (b.number||0))
+      .map(p => ({ value: p.id, label: p.number ? `#${p.number} ${p.name}` : p.name })),
     [players]
   );
 
@@ -907,7 +932,7 @@ export default function App() {
 
           {/* JSON取り込み */}
           <div style={{marginBottom: 16}}>
-            <PlayerImport />
+            <PlayerImport onImportComplete={refreshPlayers} />
           </div>
           <div className="row">
             <div>
@@ -941,7 +966,12 @@ export default function App() {
                     <button
                       className="ghost"
                       style={{padding:"4px 8px", fontSize:"12px"}}
-                      onClick={()=> setPlayers(prev => prev.filter(pl => pl.id !== p.value))}
+                      onClick={()=> {
+                        const db = loadJSON();
+                        db.players = db.players.filter(pl => pl.id !== p.value);
+                        saveJSON(db);
+                        refreshPlayers();
+                      }}
                     >
                       削除
                     </button>

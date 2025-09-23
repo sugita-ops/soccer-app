@@ -1,0 +1,11 @@
+[
+  {"name": "正常選手", "jersey": "10"},
+  {"name": "全角背番号", "jersey": "１１"},
+  {"name": "空白背番号", "jersey": "  "},
+  {"name": "", "jersey": "12"},
+  {"jersey": "13"},
+  {"name": "文字背番号", "jersey": "abc"},
+  {"name": "負の背番号", "jersey": "-1"},
+  {"name": "ゼロ背番号", "jersey": "0"},
+  {"name": "小数背番号", "jersey": "1.5"}
+]
