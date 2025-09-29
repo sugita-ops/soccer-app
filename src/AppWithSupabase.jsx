@@ -12,6 +12,8 @@ import InvitationManager from './components/InvitationManager';
 import StadiumVisionDisplay from './components/StadiumVisionDisplay';
 import PlayerStatistics from './components/PlayerStatistics';
 import TeamCustomization from './components/TeamCustomization';
+import { isSupabaseAvailable } from './lib/supabase';
+import OriginalApp from './App';
 
 const FORMATIONS = {
   "4-4-2": [
@@ -1361,6 +1363,11 @@ function SoccerApp() {
 }
 
 export default function AppWithSupabase() {
+  // Supabaseが利用できない場合は元のAppを使用
+  if (!isSupabaseAvailable()) {
+    return <OriginalApp />;
+  }
+
   return (
     <AuthProvider>
       <SoccerApp />
