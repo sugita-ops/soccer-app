@@ -12,7 +12,7 @@ const QuickLogin = ({ onToggle }) => {
     {
       id: 'coach',
       name: '田中コーチ',
-      email: 'coach@miyachu-soccer.com',
+      email: 'coach.tanaka@gmail.com',
       password: 'coach123',
       role: 'コーチ',
       avatar: '🏃',
@@ -21,7 +21,7 @@ const QuickLogin = ({ onToggle }) => {
     {
       id: 'admin',
       name: '山田部長',
-      email: 'admin@miyachu-soccer.com',
+      email: 'admin.yamada@gmail.com',
       password: 'admin123',
       role: '管理者',
       avatar: '👑',
@@ -30,7 +30,7 @@ const QuickLogin = ({ onToggle }) => {
     {
       id: 'parent1',
       name: '佐藤保護者',
-      email: 'parent1@example.com',
+      email: 'parent.sato@gmail.com',
       password: 'parent123',
       role: '保護者',
       avatar: '👨‍👩‍👧‍👦',
@@ -39,7 +39,7 @@ const QuickLogin = ({ onToggle }) => {
     {
       id: 'parent2',
       name: '鈴木保護者',
-      email: 'parent2@example.com',
+      email: 'parent.suzuki@gmail.com',
       password: 'parent123',
       role: '保護者',
       avatar: '👪',
