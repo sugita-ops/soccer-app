@@ -21,7 +21,7 @@ const QuickLogin = ({ onToggle }) => {
     {
       id: 'admin',
       name: '山田部長',
-      email: 'admin.yamada@gmail.com',
+      email: 'admin.yamada.test@gmail.com',
       password: 'admin123',
       role: '管理者',
       avatar: '👑',
@@ -39,7 +39,7 @@ const QuickLogin = ({ onToggle }) => {
     {
       id: 'parent2',
       name: '鈴木保護者',
-      email: 'parent.suzuki@gmail.com',
+      email: 'parent.suzuki.test@gmail.com',
       password: 'parent123',
       role: '保護者',
       avatar: '👪',

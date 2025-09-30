@@ -33,7 +33,7 @@ const testAccounts = [
     role: 'coach'
   },
   {
-    email: 'admin.yamada@gmail.com',
+    email: 'admin.yamada.test@gmail.com',
     password: 'admin123',
     name: '山田部長',
     role: 'admin'
@@ -45,7 +45,7 @@ const testAccounts = [
     role: 'parent'
   },
   {
-    email: 'parent.suzuki@gmail.com',
+    email: 'parent.suzuki.test@gmail.com',
     password: 'parent123',
     name: '鈴木保護者',
     role: 'parent'
