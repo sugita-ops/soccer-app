@@ -190,4 +190,4 @@ MIT License
 
 ---
 
-**開発者**: Claude Code 🤖
+**開発者**: Claude Code 🤖# Trigger redeploy
