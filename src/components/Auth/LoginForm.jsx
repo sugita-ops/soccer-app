@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { signInWithEmail, resetPassword } from '../../lib/supabase'
 import { useToast } from '../Toast'
 
-export default function LoginForm({ onSwitchToSignup }) {
+export default function LoginForm({ onSwitchToSignup, onSwitchToQuick }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -173,6 +173,19 @@ export default function LoginForm({ onSwitchToSignup }) {
               新規登録
             </button>
           </div>
+
+          {onSwitchToQuick && (
+            <div style={{textAlign: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--line)'}}>
+              <button
+                type="button"
+                className="ghost"
+                onClick={onSwitchToQuick}
+                style={{fontSize: '14px', padding: '8px 16px', color: 'var(--brand)'}}
+              >
+                ⚡ クイックログインに戻る
+              </button>
+            </div>
+          )}
         </div>
       </form>
     </div>

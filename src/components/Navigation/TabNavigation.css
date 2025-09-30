@@ -1,0 +1,244 @@
+/* タブナビゲーション全体のコンテナ */
+.tab-navigation {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg);
+}
+
+/* デスクトップ用レイアウト */
+@media (min-width: 768px) {
+  .tab-navigation {
+    flex-direction: row;
+  }
+}
+
+/* デスクトップ用サイドナビゲーション */
+.desktop-nav {
+  display: none;
+  background: var(--card);
+  border-right: 1px solid var(--line);
+  width: 240px;
+  flex-shrink: 0;
+  padding: 20px 0;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+}
+
+@media (min-width: 768px) {
+  .desktop-nav {
+    display: block;
+  }
+}
+
+.nav-header {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+
+.nav-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.nav-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  color: var(--ink-2);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  border-radius: 0;
+}
+
+.nav-item:hover {
+  background: #f8f9fa;
+  color: var(--ink);
+}
+
+.nav-item.active {
+  background: var(--brand);
+  color: white;
+  border-radius: 0;
+}
+
+.nav-item.active:hover {
+  background: var(--brand);
+}
+
+.nav-icon {
+  margin-right: 12px;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.nav-label {
+  font-weight: 500;
+}
+
+/* モバイル用トップナビゲーション */
+.mobile-nav-top {
+  display: block;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+@media (min-width: 768px) {
+  .mobile-nav-top {
+    display: none;
+  }
+}
+
+.mobile-nav-scroll {
+  display: flex;
+  overflow-x: auto;
+  padding: 8px 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mobile-nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* モバイル用ボトムナビゲーション */
+.mobile-nav-bottom {
+  display: flex;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  padding: 8px 0;
+}
+
+@media (min-width: 768px) {
+  .mobile-nav-bottom {
+    display: none;
+  }
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 4px;
+  border: none;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  border-radius: 8px;
+  margin: 0 2px;
+}
+
+.mobile-nav-item:hover {
+  background: #f8f9fa;
+}
+
+.mobile-nav-item.active {
+  color: var(--brand);
+  background: rgba(22, 163, 74, 0.1);
+}
+
+.mobile-nav-item .nav-icon {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+}
+
+.mobile-nav-item .nav-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* メインコンテンツエリア */
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+
+.content-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+@media (max-width: 767px) {
+  .content-wrapper {
+    padding: 16px;
+    /* モバイルではボトムナビの高さ分の余白を確保 */
+    padding-bottom: 80px;
+  }
+}
+
+/* デスクトップ用レイアウト調整 */
+@media (min-width: 768px) {
+  .content-wrapper {
+    padding: 32px;
+  }
+}
+
+/* タブコンテンツのフェードイン */
+.tab-content > div {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* スクロール動作の改善 */
+.tab-content {
+  scroll-behavior: smooth;
+}
+
+/* 高解像度ディスプレイ対応 */
+@media (min-width: 1200px) {
+  .desktop-nav {
+    width: 280px;
+  }
+
+  .nav-item {
+    padding: 14px 24px;
+    font-size: 15px;
+  }
+
+  .content-wrapper {
+    padding: 40px;
+  }
+}

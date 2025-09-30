@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase, getCurrentUser, signOut } from '../lib/supabase'
+import { supabase, getCurrentUser, signOut, signInWithEmail, isSupabaseAvailable } from '../lib/supabase'
 
 const AuthContext = createContext({})
 
@@ -19,6 +19,10 @@ export const AuthProvider = ({ children }) => {
 
   // プロフィール情報を取得
   const fetchProfile = async (userId) => {
+    if (!isSupabaseAvailable()) {
+      return null
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -42,6 +46,12 @@ export const AuthProvider = ({ children }) => {
 
   // ユーザーセッションの管理
   useEffect(() => {
+    // Supabaseが利用できない場合は即座にローディング完了
+    if (!isSupabaseAvailable()) {
+      setLoading(false)
+      return
+    }
+
     // 初期セッションの取得
     const getInitialSession = async () => {
       try {
@@ -85,6 +95,33 @@ export const AuthProvider = ({ children }) => {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // ログイン
+  const signIn = async (email, password) => {
+    if (!isSupabaseAvailable()) {
+      throw new Error('Supabaseが利用できません')
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      const { data, error } = await signInWithEmail(email, password)
+
+      if (error) {
+        setError(error.message)
+        throw error
+      }
+
+      // AuthStateChangeで自動的にuser/profileが設定される
+      return { data, error: null }
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // ログアウト
   const logout = async () => {
@@ -139,6 +176,7 @@ export const AuthProvider = ({ children }) => {
     profile,
     loading,
     error,
+    signIn,
     logout,
     updateProfile,
     fetchProfile,

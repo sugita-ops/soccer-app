@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { signUpWithEmail, resendEmailConfirmation } from '../../lib/supabase'
 import { useToast } from '../Toast'
 
-export default function SignupForm({ onSwitchToLogin }) {
+export default function SignupForm({ onSwitchToLogin, onSwitchToQuick }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -229,6 +229,19 @@ export default function SignupForm({ onSwitchToLogin }) {
               ログイン
             </button>
           </div>
+
+          {onSwitchToQuick && (
+            <div style={{textAlign: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--line)'}}>
+              <button
+                type="button"
+                className="ghost"
+                onClick={onSwitchToQuick}
+                style={{fontSize: '14px', padding: '8px 16px', color: 'var(--brand)'}}
+              >
+                ⚡ クイックログインに戻る
+              </button>
+            </div>
+          )}
         </div>
       </form>
     </div>
