@@ -10,6 +10,15 @@ const QuickLogin = ({ onToggle }) => {
   // クイックログイン用のプリセットアカウント
   const quickAccounts = [
     {
+      id: 'test-user',
+      name: '杉田テストユーザー',
+      email: 'k.sugita0360@icloud.com',
+      password: 'test123456',
+      role: 'テストユーザー',
+      avatar: '🧪',
+      description: 'テスト用アカウント'
+    },
+    {
       id: 'coach',
       name: '田中コーチ',
       email: 'coach.tanaka@gmail.com',
@@ -34,15 +43,6 @@ const QuickLogin = ({ onToggle }) => {
       password: 'parent123',
       role: '保護者',
       avatar: '👨‍👩‍👧‍👦',
-      description: '試合観戦・応援'
-    },
-    {
-      id: 'parent2',
-      name: '鈴木保護者',
-      email: 'parent.suzuki.test@gmail.com',
-      password: 'parent123',
-      role: '保護者',
-      avatar: '👪',
       description: '試合観戦・応援'
     }
   ];

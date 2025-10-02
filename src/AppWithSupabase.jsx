@@ -240,12 +240,34 @@ function SoccerApp() {
         background: 'linear-gradient(135deg, var(--brand) 0%, #10963f 100%)',
         color: 'white',
         padding: '16px',
-        textAlign: 'center'
+        position: 'relative'
       }}>
-        <h1 style={{margin: 0, fontSize: '18px', fontWeight: 'bold'}}>⚽ 行け！宮中サッカー部</h1>
-        <p style={{margin: '4px 0 0', fontSize: '12px', opacity: 0.9}}>
-          ようこそ、{profile?.name || user.email}さん
-        </p>
+        <div style={{textAlign: 'center'}}>
+          <h1 style={{margin: 0, fontSize: '18px', fontWeight: 'bold'}}>⚽ 行け！宮中サッカー部</h1>
+          <p style={{margin: '4px 0 0', fontSize: '12px', opacity: 0.9}}>
+            ようこそ、{profile?.name || user.email}さん
+          </p>
+        </div>
+
+        {/* ログアウトボタン */}
+        <button
+          onClick={logout}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            color: 'white',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            fontSize: '12px',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          ログアウト
+        </button>
       </div>
 
       <TabNavigation defaultTab="match">

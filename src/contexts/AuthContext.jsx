@@ -24,22 +24,32 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
+      // タイムアウト付きでプロフィール取得
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5秒タイムアウト
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
+        .abortSignal(controller.signal)
+
+      clearTimeout(timeoutId)
 
       if (error && error.code !== 'PGRST116') { // Not found error is ok for new users
-        console.error('Profile fetch error:', error)
-        setError(error.message)
+        console.warn('Profile fetch error (continuing without profile):', error.message)
+        // エラーをセットせずに null を返す（プロフィールなしでも動作）
         return null
       }
 
       return data
     } catch (err) {
-      console.error('Profile fetch error:', err)
-      setError(err.message)
+      if (err.name === 'AbortError') {
+        console.warn('Profile fetch timeout, continuing without profile')
+      } else {
+        console.warn('Profile fetch error (continuing without profile):', err.message)
+      }
       return null
     }
   }
@@ -55,7 +65,13 @@ export const AuthProvider = ({ children }) => {
     // 初期セッションの取得
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        // セッション取得にタイムアウトを設定
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session timeout')), 10000)
+        )
+
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise])
 
         if (error) {
           console.error('Session error:', error)
@@ -66,8 +82,8 @@ export const AuthProvider = ({ children }) => {
           setProfile(profileData)
         }
       } catch (err) {
-        console.error('Initial session error:', err)
-        setError(err.message)
+        console.error('Initial session error:', err.message)
+        // セッション取得エラーでもローディングを終了
       } finally {
         setLoading(false)
       }
