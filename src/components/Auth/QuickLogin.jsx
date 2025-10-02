@@ -7,7 +7,7 @@ const QuickLogin = ({ onToggle }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
 
-  // クイックログイン用のプリセットアカウント
+  // クイックログイン用のプリセットアカウント（確認済みユーザーのみ）
   const quickAccounts = [
     {
       id: 'test-user',
@@ -16,34 +16,7 @@ const QuickLogin = ({ onToggle }) => {
       password: 'kmsk0630',
       role: 'テストユーザー',
       avatar: '🧪',
-      description: 'テスト用アカウント'
-    },
-    {
-      id: 'coach',
-      name: '田中コーチ',
-      email: 'coach.tanaka@gmail.com',
-      password: 'coach123',
-      role: 'コーチ',
-      avatar: '🏃',
-      description: 'チーム管理・戦術指導'
-    },
-    {
-      id: 'admin',
-      name: '山田部長',
-      email: 'admin.yamada.test@gmail.com',
-      password: 'admin123',
-      role: '管理者',
-      avatar: '👑',
-      description: '全権限・ユーザー管理'
-    },
-    {
-      id: 'parent1',
-      name: '佐藤保護者',
-      email: 'parent.sato@gmail.com',
-      password: 'parent123',
-      role: '保護者',
-      avatar: '👨‍👩‍👧‍👦',
-      description: '試合観戦・応援'
+      description: 'テスト用アカウント（確認済み）'
     }
   ];
 
