@@ -11,9 +11,9 @@ const QuickLogin = ({ onToggle }) => {
   const quickAccounts = [
     {
       id: 'test-user',
-      name: 'クイックログインテスト',
-      email: 'quicklogin.test@gmail.com',
-      password: 'quicklogin123',
+      name: '杉田テストユーザー',
+      email: 'k.sugita0360@icloud.com',
+      password: 'kmsk0630',
       role: 'テストユーザー',
       avatar: '🧪',
       description: 'テスト用アカウント'
