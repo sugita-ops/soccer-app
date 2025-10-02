@@ -1,18 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthContainer from './components/Auth/AuthContainer';
 import TabNavigation, { TabContent } from './components/Navigation/TabNavigation';
-import MatchSection, { emptyMatch } from './components/Sections/MatchSection';
-import PlayersSection from './components/Sections/PlayersSection';
-import HistorySection from './components/Sections/HistorySection';
-import SettingsSection from './components/Sections/SettingsSection';
-import PlayerStatistics from './components/PlayerStatistics';
-import StadiumVisionDisplay from './components/StadiumVisionDisplay';
+import { emptyMatch } from './components/Sections/MatchSection';
 import { loadJSON, saveJSON } from './lib/jsonStore';
 import { syncWithCloud, savePlayersToCloud, syncFromCloudUpsert } from './lib/cloudSync';
 import { useToast, ToastContainer } from './components/Toast';
 import { isSupabaseAvailable } from './lib/supabase';
-import OriginalApp from './App';
+
+// 遅延読み込みで初期バンドルサイズを削減
+const MatchSection = lazy(() => import('./components/Sections/MatchSection'));
+const PlayersSection = lazy(() => import('./components/Sections/PlayersSection'));
+const HistorySection = lazy(() => import('./components/Sections/HistorySection'));
+const SettingsSection = lazy(() => import('./components/Sections/SettingsSection'));
+const PlayerStatistics = lazy(() => import('./components/PlayerStatistics'));
+const StadiumVisionDisplay = lazy(() => import('./components/StadiumVisionDisplay'));
+const OriginalApp = lazy(() => import('./App'));
 
 const useLocal = (key, initial) => {
   const [v, setV] = useState(() => {
@@ -212,15 +215,38 @@ function SoccerApp() {
     toast.success("試合を保存しました");
   };
 
-  // 認証待機中
+  // 認証待機中（改善版）
   if (loading) {
     return (
       <div className="login-container">
         <div className="login-card fade-in">
           <div className="login-logo">⚽</div>
-          <div style={{textAlign: 'center', color: 'var(--ink-2)'}}>
-            読み込み中...
+          <div style={{textAlign: 'center', color: 'var(--ink-2)', marginBottom: '16px'}}>
+            アプリを起動中...
           </div>
+          <div style={{
+            width: '200px',
+            height: '4px',
+            background: 'var(--line)',
+            borderRadius: '2px',
+            margin: '0 auto',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: 'var(--brand)',
+              borderRadius: '2px',
+              animation: 'loading-bar 2s ease-in-out infinite'
+            }} />
+          </div>
+          <style>{`
+            @keyframes loading-bar {
+              0% { transform: translateX(-100%); }
+              50% { transform: translateX(0%); }
+              100% { transform: translateX(100%); }
+            }
+          `}</style>
         </div>
       </div>
     );

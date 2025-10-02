@@ -17,16 +17,16 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // プロフィール情報を取得
+  // プロフィール情報を取得（高速化）
   const fetchProfile = async (userId) => {
     if (!isSupabaseAvailable()) {
       return null
     }
 
     try {
-      // タイムアウト付きでプロフィール取得
+      // より短いタイムアウトで高速化
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5秒タイムアウト
+      const timeoutId = setTimeout(() => controller.abort(), 2000) // 2秒に短縮
 
       const { data, error } = await supabase
         .from('profiles')
@@ -37,19 +37,15 @@ export const AuthProvider = ({ children }) => {
 
       clearTimeout(timeoutId)
 
-      if (error && error.code !== 'PGRST116') { // Not found error is ok for new users
-        console.warn('Profile fetch error (continuing without profile):', error.message)
-        // エラーをセットせずに null を返す（プロフィールなしでも動作）
+      if (error && error.code !== 'PGRST116') {
+        console.warn('Profile fetch error (skipping profile):', error.message)
         return null
       }
 
       return data
     } catch (err) {
-      if (err.name === 'AbortError') {
-        console.warn('Profile fetch timeout, continuing without profile')
-      } else {
-        console.warn('Profile fetch error (continuing without profile):', err.message)
-      }
+      // エラーは警告のみ、プロフィールなしで続行
+      console.warn('Profile fetch failed, continuing without profile')
       return null
     }
   }
@@ -62,28 +58,28 @@ export const AuthProvider = ({ children }) => {
       return
     }
 
-    // 初期セッションの取得
+    // 初期セッションの取得（高速化）
     const getInitialSession = async () => {
       try {
-        // セッション取得にタイムアウトを設定
+        // より短いタイムアウトで高速化
         const sessionPromise = supabase.auth.getSession()
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session timeout')), 10000)
+          setTimeout(() => reject(new Error('Session timeout')), 3000) // 3秒に短縮
         )
 
         const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise])
 
         if (error) {
-          console.error('Session error:', error)
-          setError(error.message)
+          console.warn('Session error (skipping):', error.message)
+          // エラーでもローディング終了（認証なしで続行）
         } else if (session) {
           setUser(session.user)
-          const profileData = await fetchProfile(session.user.id)
-          setProfile(profileData)
+          // プロフィール取得を非同期で実行（ローディング終了を遅らせない）
+          fetchProfile(session.user.id).then(setProfile)
         }
       } catch (err) {
-        console.error('Initial session error:', err.message)
-        // セッション取得エラーでもローディングを終了
+        console.warn('Initial session timeout, continuing without auth:', err.message)
+        // タイムアウトでも続行
       } finally {
         setLoading(false)
       }
