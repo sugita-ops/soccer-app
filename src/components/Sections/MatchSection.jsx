@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import UniformPicker from '../UniformPicker';
 import FormationPitch from '../FormationPitch';
+import { formationMap } from '../../lib/formations';
 
 const FORMATIONS = {
   "4-4-2": [
@@ -56,7 +56,7 @@ const MatchSection = ({
   setMatch,
   saveMatch,
   teamId = 'default',
-  uniforms = { fpHome:'', fpAway:'', gk:'' }
+  uniforms
 }) => {
   const [newPhoto, setNewPhoto] = useState("");
   const [newSubstitution, setNewSubstitution] = useState({ minute: "", out: "", in: "", reason: "" });
@@ -453,18 +453,41 @@ const MatchSection = ({
           ))}
         </div>
 
-        <UniformPicker teamId={teamId} />
 
         <div className="rounded-xl bg-white/50 p-3 mt-3">
           <h4 style={{fontSize: '14px', marginBottom: '8px'}}>フォーメーション視覚化</h4>
           <FormationPitch
             formation={match.formation || '4-4-2'}
-            players={Object.values(match.lineup || {}).map(playerId => {
-              if (!playerId) return null;
-              const player = players.find(p => p.id === playerId);
-              return player ? { name: player.name, id: player.id } : null;
-            })}
-            teamUniforms={uniforms}
+            players={(() => {
+              // roster を id -> player のMapにしておく
+              const rosterById = Object.fromEntries(players.map(p => [p.id, p]));
+
+              // lineup が配列またはオブジェクトの両方に対応
+              function normalizeLineup(lineup, layout) {
+                console.log('🔍 Debug lineup:', lineup);
+                console.log('🔍 Debug layout:', layout);
+                console.log('🔍 Debug rosterById:', rosterById);
+
+                if (Array.isArray(lineup)) {
+                  return layout.map((pos, i) => rosterById[lineup[i]] ?? null);
+                } else if (lineup && typeof lineup === 'object') {
+                  // FORMATIONSの各positionキーに対応
+                  const positions = FORMATIONS[match.formation || '4-4-2'];
+                  const result = positions.map(pos => rosterById[lineup[pos]] ?? null);
+                  console.log('🔍 Debug result:', result);
+                  return result;
+                }
+                return layout.map(() => null);
+              }
+
+              const layout = formationMap[match.formation || '4-4-2'];
+
+              return normalizeLineup(match.lineup, layout);
+            })()}
+            teamUniforms={(() => {
+              console.log('🎽 MatchSection uniforms:', uniforms);
+              return uniforms;
+            })()}
             useAway={false}
           />
         </div>

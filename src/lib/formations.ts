@@ -1,4 +1,4 @@
-export type FormationKey = '4-4-2' | '4-2-3-1' | '4-3-3' | '3-5-2' | '5-3-2';
+export type FormationKey = '4-4-2' | '4-2-3-1' | '4-3-3' | '3-5-2' | '5-3-2' | '3-4-2-1';
 
 export const formationMap: Record<FormationKey, { x: number; y: number; role: 'GK'|'DF'|'MF'|'FW' }[]> = {
   '4-4-2': [
@@ -32,4 +32,14 @@ export const formationMap: Record<FormationKey, { x: number; y: number; role: 'G
     {x:35,y:60,role:'MF'},{x:50,y:55,role:'MF'},{x:65,y:60,role:'MF'},
     {x:40,y:35,role:'FW'},{x:60,y:35,role:'FW'},
   ],
+  '3-4-2-1': [
+    {x:50,y:90,role:'GK'},
+    {x:30,y:70,role:'DF'},{x:50,y:68,role:'DF'},{x:70,y:70,role:'DF'},
+    {x:20,y:50,role:'MF'},{x:40,y:48,role:'MF'},{x:60,y:48,role:'MF'},{x:80,y:50,role:'MF'},
+    {x:40,y:32,role:'FW'},{x:60,y:32,role:'FW'},
+    {x:50,y:15,role:'FW'},
+  ],
 };
+
+// エイリアス export for backwards compatibility
+export const LAYOUTS = formationMap;

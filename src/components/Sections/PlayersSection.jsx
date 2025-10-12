@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import PlayerImport from '../PlayerImport';
 import { loadJSON, saveJSON } from '../../lib/jsonStore';
 
 const PlayersSection = ({
@@ -12,6 +11,7 @@ const PlayersSection = ({
 }) => {
   const [name, setName] = useState("");
   const [num, setNum] = useState("");
+  const [position, setPosition] = useState("");
 
   const addPlayer = () => {
     if(!name.trim()) return;
@@ -20,7 +20,8 @@ const PlayersSection = ({
     const newPlayer = {
       id: crypto.randomUUID(),
       name: name.trim(),
-      number: Number(num.trim()) || 0
+      number: Number(num.trim()) || 0,
+      position: position.trim() || ''
     };
 
     db.players.push(newPlayer);
@@ -29,6 +30,7 @@ const PlayersSection = ({
     refreshPlayers();
     setName("");
     setNum("");
+    setPosition("");
   };
 
   const deletePlayer = (playerId) => {
@@ -43,16 +45,6 @@ const PlayersSection = ({
     .sort((a,b)=>(a.number||0) - (b.number||0))
     .map(p => ({ value: p.id, label: p.number ? `#${p.number} ${p.name}` : p.name }));
 
-  const exportPlayers = () => {
-    const data = JSON.stringify(players, null, 2);
-    const blob = new Blob([data], {type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "players.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <div className="stack">
@@ -78,52 +70,30 @@ const PlayersSection = ({
               type="number"
             />
           </div>
+          <div>
+            <label>ポジション</label>
+            <select
+              value={position}
+              onChange={e=>setPosition(e.target.value)}
+              style={{padding: '8px', borderRadius: '4px', border: '1px solid #ccc'}}
+            >
+              <option value="">選択してください</option>
+              <option value="GK">GK</option>
+              <option value="DF">DF</option>
+              <option value="MF">MF</option>
+              <option value="FW">FW</option>
+            </select>
+          </div>
         </div>
 
         <div className="actions" style={{marginTop:8}}>
           <button className="primary" onClick={addPlayer}>
             選手を追加
           </button>
-          <button className="ghost" onClick={exportPlayers}>
-            選手データ書き出し
-          </button>
           <span className="kicker">登録人数：{players.length}人</span>
         </div>
       </section>
 
-      {/* JSON取り込み */}
-      <section className="card">
-        <h3>📂 データ取り込み</h3>
-        <PlayerImport onImportComplete={refreshPlayers} />
-      </section>
-
-      {/* クラウド保存 */}
-      <section className="card">
-        <h3>☁️ クラウド保存</h3>
-        <div className="row" style={{gap: 8, alignItems: 'flex-end'}}>
-          <div style={{flex: 1}}>
-            <label>保存パスワード</label>
-            <input
-              type="password"
-              value={cloudPassword}
-              onChange={e => setCloudPassword(e.target.value)}
-              placeholder="認証用パスワードを入力"
-              style={{fontSize: '14px'}}
-            />
-          </div>
-          <button
-            className="primary"
-            onClick={handleCloudSave}
-            disabled={isCloudLoading || !cloudPassword.trim()}
-            style={{minHeight: '44px', whiteSpace: 'nowrap'}}
-          >
-            {isCloudLoading ? "保存中..." : "☁️ クラウド保存"}
-          </button>
-        </div>
-        <div className="kicker" style={{marginTop: 4, fontSize: '11px'}}>
-          ※ 全チームで共有される選手データをクラウドに保存
-        </div>
-      </section>
 
       {/* 選手一覧 */}
       <section className="card">

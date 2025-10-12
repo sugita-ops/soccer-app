@@ -1,0 +1,31 @@
+/* CSS競合を無効化するためのスタイル */
+.formation-pitch {
+  /* Tailwindクラスとの競合を防ぐ */
+  all: unset;
+  display: block !important;
+  box-sizing: border-box;
+}
+
+.formation-pitch * {
+  box-sizing: border-box;
+}
+
+.formation-player {
+  /* プレイヤー要素の基本スタイル */
+  z-index: 10;
+}
+
+/* フォールバック要素の表示確保 */
+.formation-pitch img,
+.formation-pitch svg,
+.formation-pitch div {
+  display: block;
+  max-width: none;
+  max-height: none;
+}
+
+/* 背景画像の確実な表示 */
+.formation-pitch {
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+}

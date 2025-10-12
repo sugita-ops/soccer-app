@@ -4,7 +4,7 @@ import AuthContainer from './components/Auth/AuthContainer';
 import TabNavigation, { TabContent } from './components/Navigation/TabNavigation';
 import { emptyMatch } from './components/Sections/MatchSection';
 import { loadJSON, saveJSON } from './lib/jsonStore';
-import { syncWithCloud, savePlayersToCloud, syncFromCloudUpsert } from './lib/cloudSync';
+// import { syncWithCloud, savePlayersToCloud, syncFromCloudUpsert } from './lib/cloudSync';
 import { useToast, ToastContainer } from './components/Toast';
 import { isSupabaseAvailable } from './lib/supabase';
 
@@ -70,11 +70,12 @@ function SoccerApp() {
   useEffect(() => {
     const performInitialSync = async () => {
       try {
-        const result = await syncWithCloud();
-        if (result.success && result.action === 'imported') {
-          refreshPlayers();
-          toast.success(result.message);
-        }
+        // const result = await syncWithCloud();
+        // if (result.success && result.action === 'imported') {
+        //   refreshPlayers();
+        //   toast.success(result.message);
+        // }
+        console.log('初期同期をスキップ（cloudSync無効化中）');
       } catch (error) {
         console.warn('初期同期失敗:', error);
       }
@@ -145,15 +146,15 @@ function SoccerApp() {
     setIsCloudLoading(true);
 
     try {
-      const db = loadJSON();
-      const result = await savePlayersToCloud(db.players, cloudPassword);
-
-      if (result.success) {
-        toast.success(result.message);
-        setCloudPassword(""); // パスワードをクリア
-      } else {
-        toast.error(result.error || "保存に失敗しました");
-      }
+      // const db = loadJSON();
+      // const result = await savePlayersToCloud(db.players, cloudPassword);
+      // if (result.success) {
+      //   toast.success(result.message);
+      //   setCloudPassword("");
+      // } else {
+      //   toast.error(result.error || "保存に失敗しました");
+      // }
+      toast.info("クラウド保存機能は一時的に無効化されています");
     } catch (error) {
       toast.error("ネットワークエラーまたは認証失敗");
     } finally {
@@ -166,18 +167,18 @@ function SoccerApp() {
     setIsCloudLoading(true);
 
     try {
-      const result = await syncWithCloud();
-
-      if (result.success) {
-        if (result.action === 'imported') {
-          refreshPlayers();
-          toast.success(result.message);
-        } else if (result.action === 'no_change') {
-          toast.info("ローカルデータが最新です");
-        }
-      } else {
-        toast.error(result.error || "読み込みに失敗しました");
-      }
+      // const result = await syncWithCloud();
+      // if (result.success) {
+      //   if (result.action === 'imported') {
+      //     refreshPlayers();
+      //     toast.success(result.message);
+      //   } else if (result.action === 'no_change') {
+      //     toast.info("ローカルデータが最新です");
+      //   }
+      // } else {
+      //   toast.error(result.error || "読み込みに失敗しました");
+      // }
+      toast.info("クラウド読込機能は一時的に無効化されています");
     } catch (error) {
       toast.error("ネットワークエラーが発生しました");
     } finally {
@@ -190,18 +191,18 @@ function SoccerApp() {
     setIsCloudLoading(true);
 
     try {
-      const result = await syncFromCloudUpsert();
-
-      if (result.success) {
-        refreshPlayers();
-        if (result.action === 'upserted') {
-          toast.success(result.message);
-        } else if (result.action === 'no_data') {
-          toast.info(result.message);
-        }
-      } else {
-        toast.error(result.error || "同期に失敗しました");
-      }
+      // const result = await syncFromCloudUpsert();
+      // if (result.success) {
+      //   refreshPlayers();
+      //   if (result.action === 'upserted') {
+      //     toast.success(result.message);
+      //   } else if (result.action === 'no_data') {
+      //     toast.info(result.message);
+      //   }
+      // } else {
+      //   toast.error(result.error || "同期に失敗しました");
+      // }
+      toast.info("同期機能は一時的に無効化されています");
     } catch (error) {
       toast.error("ネットワークエラーが発生しました");
     } finally {
@@ -338,15 +339,8 @@ function SoccerApp() {
         {/* 設定タブ */}
         <TabContent tabId="settings">
           <SettingsSection
-            profile={profile}
-            logout={logout}
-            cloudPassword={cloudPassword}
-            setCloudPassword={setCloudPassword}
-            isCloudLoading={isCloudLoading}
-            handleCloudLoad={handleCloudLoad}
-            handleSyncNow={handleSyncNow}
-            comments={comments}
-            user={user}
+            refreshPlayers={refreshPlayers}
+            teamId={teamId}
           />
         </TabContent>
       </TabNavigation>

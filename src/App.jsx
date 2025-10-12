@@ -4,7 +4,6 @@ import { loadJSON, saveJSON, exportJSON, importJSON, uid } from './lib/jsonStore
 import { syncWithCloud, savePlayersToCloud, syncFromCloudUpsert } from './lib/cloudSync';
 import PlayerImport from './components/PlayerImport';
 import { useToast, ToastContainer } from './components/Toast';
-import UniformPicker from './components/UniformPicker';
 import FormationPitch from './components/FormationPitch';
 
 const FORMATIONS = {
@@ -839,19 +838,20 @@ export default function App() {
                 ))}
               </div>
 
-              {/* ユニフォーム設定 */}
-              <UniformPicker teamId={teamId} />
 
               {/* フォーメーション視覚化 */}
               <div className="rounded-xl bg-white/50 p-3 mt-3">
                 <h4 style={{fontSize: '14px', marginBottom: '8px'}}>フォーメーション視覚化</h4>
                 <FormationPitch
                   formation={match.formation || '4-4-2'}
-                  players={Object.values(match.lineup || {}).map(playerId => {
-                    if (!playerId) return null;
-                    const player = players.find(p => p.id === playerId);
-                    return player ? { name: player.name, id: player.id } : null;
-                  })}
+                  players={(() => {
+                    console.log('🏠 App.jsx uniforms:', uniforms);
+                    return Object.values(match.lineup || {}).map(playerId => {
+                      if (!playerId) return null;
+                      const player = players.find(p => p.id === playerId);
+                      return player ? { name: player.name, id: player.id } : null;
+                    });
+                  })()}
                   teamUniforms={uniforms}
                   useAway={false}
                 />
