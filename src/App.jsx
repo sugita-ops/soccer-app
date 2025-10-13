@@ -5,6 +5,7 @@ import { syncWithCloud, savePlayersToCloud, syncFromCloudUpsert } from './lib/cl
 import PlayerImport from './components/PlayerImport';
 import { useToast, ToastContainer } from './components/Toast';
 import FormationPitch from './components/FormationPitch';
+import UniformSettings from './components/UniformSettings';
 
 const FORMATIONS = {
   "4-4-2": [
@@ -291,14 +292,19 @@ export default function App() {
 
   // ユニフォーム状態
   const [teamId] = useState('default');
-  const [uniforms, setUniforms] = useState({ fpHome:'', fpAway:'', gk:'' });
+  const [uniformSettings, setUniformSettings] = useLocal("uniformSettings", {
+    fpColor: 'blue',
+    gkColor: 'yellow',
+    customUniforms: { fpHome: '', fpAway: '', gk: '' }
+  });
 
-  // ユニフォーム読み込み
-  useEffect(() => {
-    const data = loadJSON();
-    const saved = data.teamUniforms?.[teamId] || {};
-    setUniforms({ fpHome: saved.fpHome || '', fpAway: saved.fpAway || '', gk: saved.gk || '' });
-  }, [teamId]);
+  // ユニフォーム設定の保存
+  const handleSaveUniformSettings = (newSettings) => {
+    setUniformSettings(newSettings);
+    const db = loadJSON();
+    db.uniformSettings = newSettings;
+    saveJSON(db);
+  };
 
   // 起動時にクラウドから同期
   useEffect(() => {
@@ -845,14 +851,17 @@ export default function App() {
                 <FormationPitch
                   formation={match.formation || '4-4-2'}
                   players={(() => {
-                    console.log('🏠 App.jsx uniforms:', uniforms);
                     return Object.values(match.lineup || {}).map(playerId => {
                       if (!playerId) return null;
                       const player = players.find(p => p.id === playerId);
-                      return player ? { name: player.name, id: player.id } : null;
+                      return player ? {
+                        name: player.name,
+                        id: player.id,
+                        number: player.number
+                      } : null;
                     });
                   })()}
-                  teamUniforms={uniforms}
+                  teamUniforms={uniformSettings}
                   useAway={false}
                 />
               </div>
@@ -1380,6 +1389,23 @@ export default function App() {
                   <span className="kicker">登録ユーザー数：{users.length}人</span>
                 </div>
               </div>
+            </section>
+          )}
+
+          {/* 設定 - 管理者・コーチのみ */}
+          {(user?.role === "admin" || user?.role === "coach") && (
+            <section className="card-enhanced">
+              <h2>⚙️ 設定</h2>
+
+              <UniformSettings
+                currentSettings={{
+                  fpColor: uniformSettings.fpColor,
+                  gkColor: uniformSettings.gkColor
+                }}
+                customUniforms={uniformSettings.customUniforms}
+                onSave={handleSaveUniformSettings}
+                toast={toast}
+              />
             </section>
           )}
         </div>
