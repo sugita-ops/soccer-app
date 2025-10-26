@@ -2,8 +2,8 @@
   <!-- ピッチ外枠 -->
   <rect x="10" y="10" width="280" height="180" fill="none" stroke="white" stroke-width="2"/>
 
-  <!-- ハーフウェイライン -->
-  <line x1="150" y1="10" x2="150" y2="190" stroke="white" stroke-width="2"/>
+  <!-- ハーフウェイライン（横向き） -->
+  <line x1="10" y1="100" x2="290" y2="100" stroke="white" stroke-width="2"/>
 
   <!-- センターサークル -->
   <circle cx="150" cy="100" r="25" fill="none" stroke="white" stroke-width="2"/>
@@ -15,8 +15,6 @@
   <!-- ゴールエリア（上） -->
   <rect x="110" y="10" width="80" height="15" fill="none" stroke="white" stroke-width="2"/>
 
-  <!-- ペナルティスポット（上） -->
-  <circle cx="150" cy="35" r="1" fill="white"/>
 
   <!-- ペナルティエリア（下） -->
   <rect x="70" y="150" width="160" height="40" fill="none" stroke="white" stroke-width="2"/>
@@ -24,8 +22,6 @@
   <!-- ゴールエリア（下） -->
   <rect x="110" y="175" width="80" height="15" fill="none" stroke="white" stroke-width="2"/>
 
-  <!-- ペナルティスポット（下） -->
-  <circle cx="150" cy="165" r="1" fill="white"/>
 
   <!-- コーナーアーク -->
   <path d="M 10 15 A 5 5 0 0 1 15 10" fill="none" stroke="white" stroke-width="2"/>

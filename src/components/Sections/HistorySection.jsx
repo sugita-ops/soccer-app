@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { FORMATIONS } from './MatchSection';
+import { FORMATIONS_11, FORMATIONS_8 } from './MatchSection';
+
+// 全フォーメーションを統合
+const ALL_FORMATIONS = {
+  ...FORMATIONS_11,
+  ...FORMATIONS_8
+};
 
 const HistorySection = ({ matches, players, setVisionMatch }) => {
   const [filterType, setFilterType] = useState('all');
@@ -347,7 +353,7 @@ const HistorySection = ({ matches, players, setVisionMatch }) => {
                   <div style={{flex: 1, minWidth: '200px'}}>
                     <div className="kicker" style={{marginBottom: 4}}>先発メンバー:</div>
                     <div style={{fontSize: '11px', lineHeight: '1.4'}}>
-                      {(FORMATIONS[m.formation || "4-4-2"] || FORMATIONS["4-4-2"]).map(k=>{
+                      {(ALL_FORMATIONS[m.formation || "4-4-2"] || ALL_FORMATIONS["4-4-2"]).map(k=>{
                         const pid = m.lineup?.[k];
                         const player = players.find(p=>p.id===pid);
                         return (

@@ -126,10 +126,11 @@ export default function PlayerStatistics({ players = [], matches = [] }) {
     }
   }
 
-  // 選手別統計サマリー
+  // 選手別統計サマリー（Supabaseデータ + ローカルマッチデータの統合）
   const playerSummaries = useMemo(() => {
     const summaries = {}
 
+    // Supabaseの統計データを集計
     statistics.forEach(stat => {
       const playerId = stat.player_id
       if (!summaries[playerId]) {
@@ -154,6 +155,55 @@ export default function PlayerStatistics({ players = [], matches = [] }) {
       summary.totalRedCards += stat.red_cards || 0
     })
 
+    // ローカルマッチデータから得点・アシストを自動集計
+    matches.forEach(match => {
+      if (match.goals && Array.isArray(match.goals)) {
+        match.goals.forEach(goal => {
+          // 得点者
+          const scorerId = goal.scorer
+          const scorerPlayer = players.find(p => p.id === scorerId)
+
+          if (scorerPlayer) {
+            if (!summaries[scorerId]) {
+              summaries[scorerId] = {
+                player: scorerPlayer,
+                totalGoals: 0,
+                totalAssists: 0,
+                totalMinutes: 0,
+                totalMatches: 0,
+                totalYellowCards: 0,
+                totalRedCards: 0,
+                averageMinutes: 0
+              }
+            }
+            summaries[scorerId].totalGoals += 1
+          }
+
+          // アシスト
+          if (goal.assist) {
+            const assistId = goal.assist
+            const assistPlayer = players.find(p => p.id === assistId)
+
+            if (assistPlayer) {
+              if (!summaries[assistId]) {
+                summaries[assistId] = {
+                  player: assistPlayer,
+                  totalGoals: 0,
+                  totalAssists: 0,
+                  totalMinutes: 0,
+                  totalMatches: 0,
+                  totalYellowCards: 0,
+                  totalRedCards: 0,
+                  averageMinutes: 0
+                }
+              }
+              summaries[assistId].totalAssists += 1
+            }
+          }
+        })
+      }
+    })
+
     // 平均出場時間を計算
     Object.values(summaries).forEach(summary => {
       summary.averageMinutes = summary.totalMatches > 0
@@ -162,7 +212,7 @@ export default function PlayerStatistics({ players = [], matches = [] }) {
     })
 
     return Object.values(summaries).sort((a, b) => b.totalGoals - a.totalGoals)
-  }, [statistics])
+  }, [statistics, matches, players])
 
   // 管理者・コーチ以外は表示のみ
   const canEdit = profile?.role === 'admin' || profile?.role === 'coach'
